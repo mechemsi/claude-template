@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git checkout *)",
+      "Bash(git branch *)",
+      "Bash(npx prisma *)",
+      "Bash(npm run test *)",
+      "Bash(npm run lint)",
+      "Bash(npm run build)",
+      "Read(*)",
+      "Write(src/**)",
+      "Write(tests/**)",
+      "Write(prisma/**)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Write(.env*)",
+      "Write(*.secret*)"
+    ]
+  },
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "rules": [
+    ".claude/rules/code-style.md",
+    ".claude/rules/testing.md",
+    ".claude/rules/api-conventions.md"
+  ]
+}
