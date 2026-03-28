@@ -15,6 +15,7 @@ Use this as a starting point for any team that wants a consistent, well-organize
 | **Skills** | Auto-invoked workflows triggered by task context |
 | **Agents** | Isolated subagent personas for focused, specialized work |
 | **Settings** | Permission model controlling what Claude can and cannot do |
+| **Docs** | Structured project documentation — plans, implementations, decisions, runbooks |
 
 ---
 
@@ -55,6 +56,16 @@ your-project/
 | `CLAUDE.md` | :blue_circle: | Team instructions — committed to git, shared with all developers |
 | `CLAUDE.local.md` | :white_circle: | Personal overrides — gitignored, your local preferences |
 
+### `claudedocs/` — Project Documentation
+
+| File / Folder | | Description |
+|---------------|:-:|-------------|
+| `INDEX.md` | :blue_circle: | Master index — Claude reads this first to find relevant context |
+| `plans/` | :blue_circle: | Feature specs and technical designs written before implementation |
+| `implementations/` | :blue_circle: | What was built, how it works, key files and data flow |
+| `decisions/` | :blue_circle: | Architecture Decision Records — why X was chosen over Y |
+| `runbooks/` | :blue_circle: | Step-by-step guides for recurring operations |
+
 ### `.claude/` — Configuration
 
 | File | | Description |
@@ -77,6 +88,7 @@ your-project/
 | `code-style.md` | :blue_circle: | Enforces TypeScript formatting, naming, and style conventions |
 | `testing.md` | :blue_circle: | Defines how tests should be written and organized |
 | `api-conventions.md` | :blue_circle: | Sets rules for REST API design and response formats |
+| `documentation.md` | :blue_circle: | Defines how `claudedocs/` is structured and maintained |
 
 ### `.claude/skills/` — Auto-Invoked Workflows
 
@@ -184,6 +196,25 @@ Rules are automatically loaded as context. They define the standards Claude enfo
 - **code-style.md** — TypeScript strictness, naming conventions (camelCase, PascalCase), formatting (2-space indent, single quotes, semicolons), function length limits, import grouping
 - **testing.md** — Test frameworks (Vitest + Playwright), coverage targets (90%/80%/70%), naming conventions, mocking guidelines, E2E independence rules
 - **api-conventions.md** — REST route structure, consistent response envelope (`{ success, data, meta }`), HTTP status codes, Zod validation, pagination defaults
+- **documentation.md** — How to create and maintain docs in `claudedocs/`, naming conventions, required frontmatter, templates for each doc type
+
+### Claudedocs — Project Documentation
+
+Structured documentation that helps Claude (and your team) navigate the project:
+
+| Folder | What goes here | When it's written |
+|--------|---------------|-------------------|
+| **plans/** | Feature specs, technical designs, scope definitions | Before starting a feature |
+| **implementations/** | What was built, key files, architecture, data flow | After shipping a feature |
+| **decisions/** | Architecture Decision Records (ADRs) — why X over Y | When making a significant technical choice |
+| **runbooks/** | Step-by-step guides with copy-pasteable commands | When a process is repeated more than once |
+
+**How Claude uses it:** Claude reads `claudedocs/INDEX.md` first to find relevant context. Each doc has YAML frontmatter with `title`, `status`, `date`, and `related` fields so Claude can quickly filter without reading full files.
+
+**Naming conventions:**
+- Plans and implementations: `YYYY-MM-DD-short-name.md`
+- Decisions: `NNN-short-name.md` (sequential numbering)
+- Runbooks: `short-name.md`
 
 ### Skills — Auto-Invoked Workflows
 
@@ -262,6 +293,29 @@ Create a directory in `.claude/skills/` with a `skill.md`:
 .claude/skills/your-skill/
   skill.md    # Workflow definition with triggers
 ```
+
+### Add a new doc
+
+Create a markdown file in the appropriate `claudedocs/` subfolder with frontmatter:
+
+```markdown
+---
+title: Your Feature Name
+status: planned
+date: 2026-04-01
+related: []
+---
+
+# Your Feature Name
+
+## Goal
+One sentence on what this achieves.
+
+## Scope
+...
+```
+
+Then add a row to `claudedocs/INDEX.md` so Claude can discover it.
 
 ### Add a new agent
 
