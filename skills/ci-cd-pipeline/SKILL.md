@@ -109,6 +109,68 @@ LLM agents drift in conventions (layers, names, utils, logging) faster than they
 
 ---
 
+## Audit wiring: PR-blocking vs scheduled-issue-tracking
+
+Audits run with **two distinct wirings**. A repo usually needs both. Pick the right one per audit type — the difference is which event triggers the workflow and what "failure" means.
+
+### A. PR-blocking gates (fail the build)
+
+- **Triggers:** `pull_request`, `push` to protected branches.
+- **Job behaviour:** scan only the PR diff (or the new state). If a new Critical/High finding lands, **fail the build** so the PR can't merge.
+- **Examples:** gitleaks on staged content, semgrep on changed files, `npm audit` against the new lockfile, container scan on the PR-built image, schema-diff on the new OpenAPI doc.
+- **Why:** stops *new* findings from landing. Targeted, actionable, owned by the PR author.
+
+### B. Scheduled audits (manage GitHub issues, **never fail the build**)
+
+- **Triggers:** `schedule:` (e.g. weekly cron) + `workflow_dispatch`.
+- **Job behaviour:**
+  - Scan the whole codebase / lockfile / image set.
+  - If findings exist → **open or update** a single labelled GitHub issue per audit category. Idempotent: same title + label → update; new run → bump the body with the latest report.
+  - If findings are gone → **close** the previously-opened issue.
+  - The job itself **always exits 0**. The issue is the signal.
+- **Why:** scheduled-job failures create noise without an actionable PR. Issues are actionable and form a live dashboard. The `/issues` view with the `audit` label becomes the team's standing audit board.
+
+### Where to apply pattern B (not pattern A)
+
+Use scheduled-issue-tracking for findings that:
+
+- Already exist in the codebase (you don't want to gate the next unrelated PR on them).
+- Need triage/decision rather than immediate fix (e.g. "outdated dep — upgrade across 3 services this sprint").
+- Cover concerns that are about the repo as a whole, not the diff.
+
+Specific audits to wire as scheduled issue-trackers:
+
+- Dependency vulnerabilities (`pip-audit`, `npm audit`, `osv-scanner`) — across the full lockfile, not just diff.
+- Outdated dependencies (`npm outdated`, `pip list --outdated`).
+- License drift / compliance.
+- Container base-image vulns (rebuild + scan weekly even if no app changes).
+- Dead-code / unused-dep accumulation reports.
+- SBOM diff against the previous release.
+- Cyclomatic-complexity / duplicate-code budgets when ratcheting (report drift, don't break builds mid-sprint).
+
+### Issue lifecycle (idempotent)
+
+```
+issue title:   "Audit: <category> — <project>"
+issue labels:  ["audit", "automated", "<category>"]
+
+on each scheduled run:
+  if findings:
+    if existing open issue with this title+label: update body (replace)
+    else: create new issue
+  else:
+    if existing open issue with this title+label: close with comment "✅ no findings on <date>"
+```
+
+Use a helper such as `peter-evans/create-issue-from-file` or a small `gh issue` wrapper. The board ends up with one row per audit category per project: open issues = current debt, closed issues = recently-resolved debt with provenance.
+
+### One-line summary
+
+| Trigger | Finding | No finding |
+|---------|---------|------------|
+| PR / push (gate) | **Fail the build** | Continue |
+| Scheduled (dashboard) | Open/update issue, exit 0 | Close issue, exit 0 |
+
 ## Auditing an existing pipeline
 
 Use this as a checklist when reviewing a project's CI. For each row, mark the project's status: ✅ in place, **add** to introduce, **review** if uncertain, **—** if not applicable.
