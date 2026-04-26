@@ -118,9 +118,12 @@ your-project/
 
 | File | | Description |
 |------|:-:|-------------|
-| `code-style.md` | :blue_circle: | Enforces TypeScript formatting, naming, and style conventions |
+| `code-style.md` | :blue_circle: | TypeScript formatting, naming, and style conventions |
+| `naming-and-comments.md` | :blue_circle: | Identifier naming, when to comment, TODO/FIXME discipline |
+| `file-and-module-structure.md` | :blue_circle: | File size limits, one-concept-per-file, module boundaries |
+| `dependency-management.md` | :blue_circle: | When to add a dep, lockfile hygiene, security audits |
 | `testing.md` | :blue_circle: | Defines how tests should be written and organized |
-| `api-conventions.md` | :blue_circle: | Sets rules for REST API design and response formats |
+| `api-conventions.md` | :blue_circle: | Project-specific REST envelope and validation defaults |
 | `documentation.md` | :blue_circle: | Defines how `claudedocs/` is structured and maintained |
 
 ### Skills — installed globally at `~/.claude/skills/`
@@ -140,10 +143,21 @@ Skills are user-level, not per-project. They auto-trigger across every project o
 |-------|-------------|
 | `solid-principles` | SRP, OCP, LSP, ISP, DIP with TS bad/good examples |
 | `code-quality-heuristics` | DRY / KISS / YAGNI with a duplicate-vs-abstract decision flow |
+| `domain-modeling` | DDD essentials — value objects, entities, aggregates, branded IDs |
 | `creational-patterns` | Factory Method, Abstract Factory, Builder, Prototype, Singleton |
 | `structural-patterns` | Adapter, Bridge, Composite, Decorator, Facade, Flyweight, Proxy |
 | `behavioral-patterns` | Chain of Responsibility, Command, Iterator, Mediator, Memento, Observer, State, Strategy, Template Method, Visitor |
 | `code-smells` | Long Method, Feature Envy, Switch Statements, etc. → refactoring techniques |
+
+**System / cross-cutting skills:**
+
+| Skill | Description |
+|-------|-------------|
+| `error-handling` | Result vs exceptions, retry/backoff, never-swallow, boundary translation |
+| `logging-observability` | Structured logs, trace IDs, RED/USE metrics, redaction |
+| `testing-architecture` | Test pyramid, what to mock vs run real, hexagonal testing |
+| `api-design` | REST modeling, idempotency, versioning, pagination, error envelopes |
+| `12-factor-app` | Config, processes, port binding, disposability, dev/prod parity |
 
 **Process skills:**
 
@@ -273,18 +287,24 @@ Structured documentation that helps Claude (and your team) navigate the project:
 
 ### Skills — Auto-Invoked Workflows (global)
 
-Skills live at `~/.claude/skills/` and trigger automatically across every project — no slash command needed. The template doesn't ship its own `.claude/skills/`; the global location keeps a single source of truth and avoids per-repo drift.
+Skills live at `~/.claude/skills/` (symlinked from this repo's `skills/`) and trigger automatically across every project — no slash command needed. The repo is the single source of truth; `git pull` keeps installed skills up to date.
 
 | Skill | Triggers when | What it does |
 |-------|--------------|-------------|
-| **deploy** | Asked to deploy or prepare a release | Runs a 6-phase checklist: quality gates, DB migrations, env audit, breaking changes, release notes, sign-off |
-| **security-review** | Code touches auth, payments, or "security" appears in task | Runs a full security audit: auth checks, input validation, data exposure, secrets, dependencies, OWASP vulnerabilities |
+| **deploy** | Asked to deploy or prepare a release | 6-phase checklist: quality gates, DB migrations, env audit, breaking changes, release notes, sign-off |
+| **security-review** | Code touches auth, payments, or "security" appears in task | Auth checks, input validation, data exposure, secrets, dependencies, OWASP vulnerabilities |
 | **solid-principles** | Designing classes/services, introducing inheritance | TS bad/good examples for SRP, OCP, LSP, ISP, DIP |
 | **code-quality-heuristics** | Considering abstraction or duplication | DRY / KISS / YAGNI with decision flowchart |
+| **domain-modeling** | Designing entities, IDs, money, or domain types | DDD building blocks; rich vs anemic; branded IDs; bounded contexts |
 | **creational-patterns** | Building object-construction logic | Factory Method, Abstract Factory, Builder, Prototype, Singleton |
 | **structural-patterns** | Composing or wrapping objects | Adapter, Bridge, Composite, Decorator, Facade, Flyweight, Proxy |
 | **behavioral-patterns** | Designing object interactions or state machines | Chain of Responsibility, Command, Iterator, Mediator, Memento, Observer, State, Strategy, Template Method, Visitor |
 | **code-smells** | Reviewing or refactoring existing code | Long Method, Feature Envy, etc. → refactoring techniques |
+| **error-handling** | Writing try/catch, async functions, or error types | Result vs exceptions, retry/backoff, never-swallow, boundary translation |
+| **logging-observability** | Adding logs, debugging prod, designing metrics | Structured logs, trace/correlation IDs, RED/USE metrics, redaction |
+| **testing-architecture** | Deciding test level, what to mock, fixing flaky tests | Test pyramid, hexagonal testing, mock-the-boundary heuristic |
+| **api-design** | Designing or reviewing HTTP endpoints | REST modeling, idempotency, versioning, pagination, error envelopes |
+| **12-factor-app** | Configuring a service for production | Config in env, stateless processes, disposability, dev/prod parity |
 | **writing-prd** | Starting a new user-facing feature | Guides PRD writing into `claudedocs/prds/` before a plan |
 | **bootstrap-claude-template** | Setting up a new project | Copies the template structure into a target directory |
 

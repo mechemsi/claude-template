@@ -13,9 +13,12 @@ This is the shared team instructions file. It is committed to git and applies to
 
 ## Code Style
 - Follow rules in `.claude/rules/code-style.md`
+- Follow naming and commenting rules in `.claude/rules/naming-and-comments.md`
 - Follow API conventions in `.claude/rules/api-conventions.md`
 - All new features must have tests per `.claude/rules/testing.md`
 - Follow documentation conventions in `.claude/rules/documentation.md`
+- Keep files small and modules well-bounded per `.claude/rules/file-and-module-structure.md`
+- Manage dependencies per `.claude/rules/dependency-management.md`
 
 ## Git Conventions
 - Branch naming: `feat/`, `fix/`, `chore/`, `docs/`
