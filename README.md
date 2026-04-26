@@ -158,6 +158,7 @@ Skills are user-level, not per-project. They auto-trigger across every project o
 | `testing-architecture` | Test pyramid, what to mock vs run real, hexagonal testing |
 | `api-design` | REST modeling, idempotency, versioning, pagination, error envelopes |
 | `12-factor-app` | Config, processes, port binding, disposability, dev/prod parity |
+| `ci-cd-pipeline` | Six gate categories (security, correctness, scale, release, AI-specific, agent governance) + adoption order |
 
 **Process skills:**
 
@@ -306,6 +307,7 @@ Skills live at `~/.claude/skills/` (symlinked from this repo's `skills/`) and tr
 | **testing-architecture** | Deciding test level, what to mock, fixing flaky tests | Test pyramid, hexagonal testing, mock-the-boundary heuristic |
 | **api-design** | Designing or reviewing HTTP endpoints | REST modeling, idempotency, versioning, pagination, error envelopes |
 | **12-factor-app** | Configuring a service for production | Config in env, stateless processes, disposability, dev/prod parity |
+| **ci-cd-pipeline** | Designing or auditing CI/CD; picking gates for AI-coded apps | Six gate categories, adoption order, tools (gitleaks, semgrep, trivy, osv-scanner, etc.) |
 | **writing-prd** | Starting a new user-facing feature | Guides PRD writing into `claudedocs/prds/` before a plan |
 | **bootstrap-claude-template** | Setting up a new project | Copies the template structure into a target directory |
 | **install-claudet-rules** | Syncing rules into an existing project | Diff-aware install/update of `.claude/rules/*.md` from claudet |
