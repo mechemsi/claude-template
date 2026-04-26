@@ -1,8 +1,10 @@
 # Claude Project Template
 
-A batteries-included template for structuring Claude Code projects with commands, rules, skills, and subagents.
+A batteries-included template for structuring Claude Code projects with commands, rules, subagents, and a documentation workflow.
 
 Use this as a starting point for any team that wants a consistent, well-organized Claude Code setup from day one.
+
+> **Skills note.** Architecture and process skills (SOLID, design patterns, code smells, DRY/KISS/YAGNI, PRD writing, deploy, security review) are version-controlled here under [`skills/`](skills/). `make install` symlinks them into `~/.claude/skills/` so they auto-trigger across every project on the machine. `git pull` then keeps them up to date. The repo also ships `bootstrap-claude-template` as one of those skills — it scaffolds new projects from this repo. See [Quick Start](#quick-start).
 
 ---
 
@@ -12,22 +14,50 @@ Use this as a starting point for any team that wants a consistent, well-organize
 |----------|-------------|
 | **Rules** | Modular coding standards Claude follows automatically |
 | **Commands** | Slash commands for common workflows (`/review`, `/deploy`, `/fix-issue`) |
-| **Skills** | Auto-invoked workflows triggered by task context |
 | **Agents** | Isolated subagent personas for focused, specialized work |
 | **Settings** | Permission model controlling what Claude can and cannot do |
-| **Docs** | Structured project documentation — plans, implementations, decisions, runbooks |
+| **Docs** | Structured project documentation — PRDs, plans, implementations, decisions, runbooks |
+| **Skills** *(global)* | Architecture, refactoring, and PRD-writing skills installed at `~/.claude/skills/` — apply to all projects |
 
 ---
 
 ## Quick Start
 
+### First-time setup on a new machine — install the skills globally
+
 ```bash
-# Clone the template
+git clone git@github.com:mechemsi/claude-template.git ~/pr/claudet
+cd ~/pr/claudet
+make install         # symlinks ./skills/* into ~/.claude/skills/
+```
+
+`git pull` thereafter automatically updates the globally-available skills (because they're symlinks, not copies). Other targets:
+
+| Command | What it does |
+|---------|-------------|
+| `make install` | Symlink `./skills/*` into `~/.claude/skills/` (recommended) |
+| `make install-copy` | Copy instead of symlink — needs re-running after `git pull` |
+| `make uninstall` | Remove symlinks in `~/.claude/skills/` that point at this repo |
+| `make list` | Show installed skills and where each one points |
+| `make doctor` | Diagnose missing or broken installs |
+| `make help` | Show all targets |
+
+### Scaffolding a new project — use the `bootstrap-claude-template` skill
+
+After `make install`, the skill triggers automatically:
+
+```
+You: scaffold a new claudet project in ./my-project
+Claude: [bootstrap-claude-template runs, copies .claude/{rules,commands,agents,settings.json},
+         claudedocs/ scaffold, and CLAUDE.md into ./my-project; resets INDEX.md to empty]
+```
+
+### Manual scaffold (without the bootstrap skill)
+
+```bash
 git clone git@github.com:mechemsi/claude-template.git my-project
 cd my-project
-
-# Remove git history and start fresh
-rm -rf .git
+rm -rf .git skills/ Makefile        # skills are global, Makefile is for the template repo
 git init
 git add .
 git commit -m "init: scaffold from claude-template"
@@ -55,13 +85,16 @@ your-project/
 |------|:-:|-------------|
 | `CLAUDE.md` | :blue_circle: | Team instructions — committed to git, shared with all developers |
 | `CLAUDE.local.md` | :white_circle: | Personal overrides — gitignored, your local preferences |
+| `Makefile` | :blue_circle: | `make install` symlinks `./skills/*` into `~/.claude/skills/` |
+| `skills/` | :blue_circle: | Canonical, version-controlled skill sources (installed globally via `make install`) |
 
 ### `claudedocs/` — Project Documentation
 
 | File / Folder | | Description |
 |---------------|:-:|-------------|
 | `INDEX.md` | :blue_circle: | Master index — Claude reads this first to find relevant context |
-| `plans/` | :blue_circle: | Feature specs and technical designs written before implementation |
+| `prds/` | :blue_circle: | Product Requirements — what/why for new features (precedes plans) |
+| `plans/` | :blue_circle: | Technical designs — how a feature will be built |
 | `implementations/` | :blue_circle: | What was built, how it works, key files and data flow |
 | `decisions/` | :blue_circle: | Architecture Decision Records — why X was chosen over Y |
 | `runbooks/` | :blue_circle: | Step-by-step guides for recurring operations |
@@ -90,12 +123,34 @@ your-project/
 | `api-conventions.md` | :blue_circle: | Sets rules for REST API design and response formats |
 | `documentation.md` | :blue_circle: | Defines how `claudedocs/` is structured and maintained |
 
-### `.claude/skills/` — Auto-Invoked Workflows
+### Skills — installed globally at `~/.claude/skills/`
 
-| File | | Description |
-|------|:-:|-------------|
-| `deploy/skill.md` | :green_circle: | 6-phase deployment safety checklist — auto-invoked |
-| `security-review/skill.md` | :green_circle: | Deep security audit workflow — auto-invoked |
+Skills are user-level, not per-project. They auto-trigger across every project on the machine. Each skill is a directory with a `SKILL.md` containing YAML frontmatter (`name`, `description`) — the `description` is the trigger phrase Claude matches against the current task.
+
+**Workflow skills:**
+
+| Skill | Description |
+|-------|-------------|
+| `deploy` | 6-phase deployment safety checklist |
+| `security-review` | Deep security audit workflow |
+
+**Architecture & design skills:**
+
+| Skill | Description |
+|-------|-------------|
+| `solid-principles` | SRP, OCP, LSP, ISP, DIP with TS bad/good examples |
+| `code-quality-heuristics` | DRY / KISS / YAGNI with a duplicate-vs-abstract decision flow |
+| `creational-patterns` | Factory Method, Abstract Factory, Builder, Prototype, Singleton |
+| `structural-patterns` | Adapter, Bridge, Composite, Decorator, Facade, Flyweight, Proxy |
+| `behavioral-patterns` | Chain of Responsibility, Command, Iterator, Mediator, Memento, Observer, State, Strategy, Template Method, Visitor |
+| `code-smells` | Long Method, Feature Envy, Switch Statements, etc. → refactoring techniques |
+
+**Process skills:**
+
+| Skill | Description |
+|-------|-------------|
+| `writing-prd` | Write a PRD before a plan when starting a new feature |
+| `bootstrap-claude-template` | Scaffold a new project from this template repo |
 
 ### `.claude/agents/` — Subagent Personas
 
@@ -216,14 +271,22 @@ Structured documentation that helps Claude (and your team) navigate the project:
 - Decisions: `NNN-short-name.md` (sequential numbering)
 - Runbooks: `short-name.md`
 
-### Skills — Auto-Invoked Workflows
+### Skills — Auto-Invoked Workflows (global)
 
-Skills trigger automatically when Claude detects relevant context — no slash command needed:
+Skills live at `~/.claude/skills/` and trigger automatically across every project — no slash command needed. The template doesn't ship its own `.claude/skills/`; the global location keeps a single source of truth and avoids per-repo drift.
 
 | Skill | Triggers when | What it does |
 |-------|--------------|-------------|
-| **Deploy** | Asked to deploy or prepare a release | Runs a 6-phase checklist: quality gates, DB migrations, env audit, breaking changes, release notes, sign-off |
-| **Security Review** | Code touches auth, payments, or "security" appears in task | Runs a full security audit: auth checks, input validation, data exposure, secrets, dependencies, OWASP vulnerabilities |
+| **deploy** | Asked to deploy or prepare a release | Runs a 6-phase checklist: quality gates, DB migrations, env audit, breaking changes, release notes, sign-off |
+| **security-review** | Code touches auth, payments, or "security" appears in task | Runs a full security audit: auth checks, input validation, data exposure, secrets, dependencies, OWASP vulnerabilities |
+| **solid-principles** | Designing classes/services, introducing inheritance | TS bad/good examples for SRP, OCP, LSP, ISP, DIP |
+| **code-quality-heuristics** | Considering abstraction or duplication | DRY / KISS / YAGNI with decision flowchart |
+| **creational-patterns** | Building object-construction logic | Factory Method, Abstract Factory, Builder, Prototype, Singleton |
+| **structural-patterns** | Composing or wrapping objects | Adapter, Bridge, Composite, Decorator, Facade, Flyweight, Proxy |
+| **behavioral-patterns** | Designing object interactions or state machines | Chain of Responsibility, Command, Iterator, Mediator, Memento, Observer, State, Strategy, Template Method, Visitor |
+| **code-smells** | Reviewing or refactoring existing code | Long Method, Feature Envy, etc. → refactoring techniques |
+| **writing-prd** | Starting a new user-facing feature | Guides PRD writing into `claudedocs/prds/` before a plan |
+| **bootstrap-claude-template** | Setting up a new project | Copies the template structure into a target directory |
 
 ### Agents — Isolated Subagents
 
@@ -287,12 +350,27 @@ Create a markdown file in `.claude/commands/`:
 
 ### Add a new skill
 
-Create a directory in `.claude/skills/` with a `skill.md`:
+New skills are created at user-global `~/.claude/skills/`, not inside the project. This keeps a single source of truth across every project on the machine.
 
 ```
-.claude/skills/your-skill/
-  skill.md    # Workflow definition with triggers
+~/.claude/skills/your-skill/
+  SKILL.md    # Workflow definition with triggers
 ```
+
+```markdown
+---
+name: your-skill
+description: Use when [specific triggering conditions and symptoms].
+---
+
+# Your Skill
+
+Body — overview, when to use, examples, common mistakes.
+```
+
+The `description` is what the harness matches against the current task. Write it as "Use when…" — list real symptoms a developer would describe, not a summary of what the skill teaches.
+
+If a skill is genuinely project-specific (references this repo's stack/scripts and would mis-fire on another project), it can live at `.claude/skills/<name>/SKILL.md` in the project. Most skills are not.
 
 ### Add a new doc
 

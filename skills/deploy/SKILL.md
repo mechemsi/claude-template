@@ -1,9 +1,10 @@
-# Skill: Deploy Workflow
+---
+name: deploy
+description: Use when asked to deploy, prepare a release, run pre-deploy checks, or before shipping code to production; ensures typecheck, lint, tests, build, migrations, env vars, and breaking changes are reviewed before release.
+---
 
-**Type**: Auto-invoked workflow
-**Triggers**: When asked to deploy, prepare a release, or run pre-deploy checks
+# Deploy Workflow
 
-## Purpose
 Execute a structured, safe deployment checklist to ensure nothing is missed before shipping to production.
 
 ## Workflow

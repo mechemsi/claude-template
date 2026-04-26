@@ -37,20 +37,24 @@ tests/
   e2e/
 claudedocs/
   INDEX.md          # Master index — read this first for project context
-  plans/            # Feature specs and designs (before implementation)
+  prds/             # Product Requirements (what/why) — written before plans
+  plans/            # Technical designs (how) — written before implementation
   implementations/  # What was built and how it works (after implementation)
   decisions/        # Architecture Decision Records (ADRs)
   runbooks/         # Step-by-step operational guides
 ```
+
+> **Skills.** Architecture and process skills (SOLID, design patterns, code smells, DRY/KISS/YAGNI, PRD writing, deploy, security review) live in this repo under `skills/` as the canonical source. They are version-controlled here and installed user-global by running `make install` from the repo root, which symlinks `./skills/*` into `~/.claude/skills/`. After install they auto-trigger across every project. New shared skills go in this repo's `skills/` directory; only project-specific skills should ever live in a project's `.claude/skills/`.
 
 ## Documentation Workflow
 
 Claude must keep `claudedocs/` up to date as part of the development process:
 
 ### Before starting a feature
-1. Check `claudedocs/INDEX.md` for existing context — plans, decisions, related implementations
-2. Create a plan doc in `claudedocs/plans/` if one doesn't exist yet
-3. If a significant technical choice is being made, create an ADR in `claudedocs/decisions/`
+1. Check `claudedocs/INDEX.md` for existing context — PRDs, plans, decisions, related implementations
+2. For new user-facing features, write a PRD in `claudedocs/prds/` first (use `_template.md`); skip for refactors/bug fixes
+3. After PRD approval, create a plan doc in `claudedocs/plans/` and link the PRD via `related`
+4. If a significant technical choice is being made, create an ADR in `claudedocs/decisions/`
 
 ### After completing a feature
 1. Create or update an implementation doc in `claudedocs/implementations/`

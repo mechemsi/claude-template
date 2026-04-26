@@ -1,9 +1,10 @@
-# Skill: Security Review
+---
+name: security-review
+description: Use when asked to review code for security; before deploying auth, payment, or other sensitive code paths; when handling user input, secrets, or API endpoints; or when the word "security" appears in a task.
+---
 
-**Type**: Auto-invoked workflow
-**Triggers**: When asked to review code for security, before deploying auth/payment code, or when the word "security" appears in a task
+# Security Review
 
-## Purpose
 Perform a deep security audit of code changes or a specified module.
 
 ## Workflow

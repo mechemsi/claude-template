@@ -2,6 +2,14 @@
 
 Quick reference for all project documentation. Claude reads this first to find relevant context.
 
+## PRDs
+
+PRDs answer **what** and **why** — the user-facing requirements that precede a technical plan.
+
+| Doc | Status | Date | Summary |
+|-----|--------|------|---------|
+| _none yet — copy `prds/_template.md` to start_ | | | |
+
 ## Plans
 
 | Doc | Status | Date | Summary |
