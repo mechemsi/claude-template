@@ -135,3 +135,4 @@ If the new project is for a teammate who doesn't have those skills, tell them to
 - Source template: `$SRC` (resolved at runtime from the symlinked install)
 - Global skills: `~/.claude/skills/` (symlinks back into `$SRC/skills/`)
 - After bootstrap, the `writing-prd` skill triggers automatically when the user describes a new feature.
+- For ongoing rule sync (after claudet rules evolve), use the `install-claudet-rules` skill — it handles diff-aware updates without re-running bootstrap.
