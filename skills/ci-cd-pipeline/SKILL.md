@@ -109,6 +109,72 @@ LLM agents drift in conventions (layers, names, utils, logging) faster than they
 
 ---
 
+## Auditing an existing pipeline
+
+Use this as a checklist when reviewing a project's CI. For each row, mark the project's status: ✅ in place, **add** to introduce, **review** if uncertain, **—** if not applicable.
+
+| # | Gap | Status |
+|---|-----|--------|
+| 1 | Secret scanning (gitleaks / trufflehog + GitHub push protection) | |
+| 2 | SAST per language (semgrep + bandit / eslint-security / gosec) | |
+| 3 | SCA on every PR (`pip-audit`, `npm audit`, `osv-scanner`) — not just weekly cron | |
+| 4 | Container image scan on built images (trivy / grype) — also scan base | |
+| 5 | IaC scan (checkov / tfsec) on Dockerfile, compose, k8s, terraform | |
+| 6 | Dependency Review action on PRs (license + CVE diff) | |
+| 7 | SBOM generated on release (syft → SPDX/CycloneDX) | |
+| 8 | Build provenance (`actions/attest-build-provenance`, SLSA ≥ 2) | |
+| 9 | Pinned action SHAs (no `@v4`) + `step-security/harden-runner` | |
+| 10 | Format + lint as **blocking** check | |
+| 11 | Strict typing (`mypy --strict`, `tsc --noEmit --strict`, `go vet`) | |
+| 12 | Unit + integration tests both required | |
+| 13 | Coverage gate + diff-cover (per-PR diff coverage ≥ floor) | |
+| 14 | Mutation testing on critical modules (`mutmut` / `stryker`) | |
+| 15 | Migration safety (up + down dry-run against throwaway DB) | |
+| 16 | Contract / schema diff (`oasdiff`, `buf breaking`, GraphQL schema diff) | |
+| 17 | Dead-code & unused-dep scan (`knip`, `ts-prune`, `vulture`, `depcheck`) | |
+| 18 | PR size guard + `CODEOWNERS` + Conventional Commits title lint | |
+| 19 | Test-skip detector (grep diff for `@skip`, `.skip`, `xit(`, `it.only(`) | |
+| 20 | Artefact-hygiene grep (TODO/FIXME/"left as exercise" in non-doc files) | |
+| 21 | Build + dependency cache (40–80% wall-clock savings) | |
+| 22 | Matrix builds for supported runtime versions / OS | |
+| 23 | Reusable `workflow_call` shared across repos | |
+| 24 | Path filters + per-surface job fan-out | |
+| 25 | Self-hosted runners for heavy jobs (with harden-runner) | |
+| 26 | Preview environments on PR | |
+| 27 | Performance budgets (Lighthouse CI / k6 / size-limit) | |
+| 28 | Flaky-test quarantine (retry + open issue, not silent re-run) | |
+| 29 | Environment protection rules + manual approval on production | |
+| 30 | Expand-migrate-contract enforced via lint | |
+| 31 | Progressive delivery (canary / blue-green) + automated rollback | |
+| 32 | Feature flags for AI-heavy paths | |
+| 33 | Post-deploy smoke tests + synthetic monitors as required status | |
+| 34 | Runbook link required in release notes / PR template | |
+| 35 | Prompt / model registry versioned in git | |
+| 36 | AI eval harness in CI (deterministic, blocks regressions) | |
+| 37 | Cost + latency budgets per AI endpoint, reported in PR | |
+| 38 | PII / prompt-injection lint + red-team fixtures in eval set | |
+| 39 | Pinned model versions (no `*-latest` in prod); model + prompt hash logged per response | |
+| 40 | JSON Schema validation on every LLM tool-call argument | |
+| 41 | `AGENTS.md` / `CLAUDE.md` per repo (allowed libs, naming, layers, logging) | |
+| 42 | Gold-standard file (one canonical module exemplifying every rule) | |
+| 43 | ADR directory `docs/adr/` (MADR format) | |
+| 44 | AI review bot as required check (Greptile / CodeRabbit / Qodo) | |
+| 45 | Duplicate-code + cyclomatic complexity budgets (jscpd, lizard, radon) | |
+| 46 | Cyclic / illegal-import detection (madge, dependency-cruiser, import-linter) | |
+| 47 | Monorepo affected graph (Nx / Turborepo) — only build/test what changed | |
+| 48 | `pre-commit` framework (or lefthook / husky) — same ruleset as CI | |
+| 49 | Pinned runtimes (`.tool-versions` / `.nvmrc` / `.python-version`) | |
+| 50 | EditorConfig + single-source formatter config | |
+| 51 | Conventional Commits + commitlint + semantic-release | |
+| 52 | Renovate (grouped, auto-merge patch/minor on green) | |
+| 53 | PR template with AI-disclosure (% AI-generated, prompt link, runbook) | |
+| 54 | Commit signing required on protected branches | |
+| 55 | Structured-logging lint rule (event + fields + trace_id) | |
+| 56 | Agent sandboxing in CI when agents run inside CI (harden-runner + ephemeral) | |
+| 57 | Spec-driven PRs (plan/PRD committed alongside code, enforced by template) | |
+
+Output the table marking each row's status, then prioritise the gaps using the adoption order below — don't try to fix all of them in one PR.
+
 ## Minimum viable baseline — adoption order
 
 Don't try to add all 60+ gates at once. This order maximises return per hour spent.
