@@ -7,17 +7,62 @@ description: Use when starting a new project from scratch and wanting Claude Cod
 
 Scaffolds a target project's `.claude/` config, `claudedocs/` doc structure, and `CLAUDE.md` by copying from the canonical claudet template repo. Architecture and process skills live in the same repo under `skills/` and are installed user-global via `make install` — they are NOT part of the per-project bootstrap copy.
 
-## Locating the source repo
+## Canonical source
 
-This skill is installed as a symlink at `~/.claude/skills/bootstrap-claude-template/` pointing back at the claudet repo. Resolve the repo root from the symlink — works on any PC where `make install` has been run:
-
-```bash
-SKILL_REAL=$(readlink -f "$HOME/.claude/skills/bootstrap-claude-template/SKILL.md")
-SRC=$(dirname "$(dirname "$(dirname "$SKILL_REAL")")")
-# $SRC = absolute path to the claudet repo root
+```
+Repo:    https://github.com/mechemsi/claude-template
+Clone:   git@github.com:mechemsi/claude-template.git
+Branch:  main
 ```
 
-If `make install-copy` was used (no symlink), or the skill was copied manually, ask the user for the repo path.
+Embedded in the skill so it works even when no local clone is on the machine.
+
+## Locating the source (in priority order)
+
+Resolve `$SRC` by trying these in order:
+
+### 1. Local clone via symlink (preferred — fast, offline-capable)
+
+```bash
+SKILL_LINK="$HOME/.claude/skills/bootstrap-claude-template"
+if [ -L "$SKILL_LINK" ]; then
+  SKILL_REAL=$(readlink -f "$SKILL_LINK/SKILL.md")
+  SRC=$(dirname "$(dirname "$(dirname "$SKILL_REAL")")")
+  [ -d "$SRC/.git" ] && SOURCE_KIND="local"
+fi
+```
+
+### 2. Freshness check (only if local source resolved)
+
+```bash
+if [ "$SOURCE_KIND" = "local" ]; then
+  git -C "$SRC" fetch --quiet origin main 2>/dev/null
+  BEHIND=$(git -C "$SRC" rev-list --count HEAD..origin/main 2>/dev/null || echo "?")
+  DIRTY=$(git -C "$SRC" status --porcelain | head -1)
+  if [ "$BEHIND" != "0" ] && [ "$BEHIND" != "?" ]; then
+    echo "Local claudet is $BEHIND commits behind origin/main."
+    [ -z "$DIRTY" ] && echo "Pull now? (clean tree)"
+  fi
+fi
+```
+
+### 3. GitHub fallback (no local clone, or symlink broken)
+
+```bash
+if [ -z "$SOURCE_KIND" ]; then
+  echo "No local claudet clone found. Shallow-clone from GitHub? (y/n)"
+  # On yes:
+  SRC=$(mktemp -d -t claudet-XXXXXXXX)
+  git clone --depth 1 --branch main \
+    https://github.com/mechemsi/claude-template.git "$SRC"
+  SOURCE_KIND="ephemeral"
+  trap 'rm -rf "$SRC"' EXIT
+fi
+```
+
+Report which source resolved (kind / path / commit / freshness) before proceeding.
+
+If the user has no network and no local clone, abort cleanly — never proceed with a partial scaffold.
 
 ## When to use
 

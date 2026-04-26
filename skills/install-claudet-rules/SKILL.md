@@ -24,17 +24,88 @@ Rules live as **real files** in each project so that:
 
 **Don't use** for skills (they're symlinked globally via `make install`), or for `CLAUDE.md` (different scope — handled by the `bootstrap-claude-template` skill).
 
-## Locate the claudet repo
+## Canonical source
 
-This skill is installed as a symlink at `~/.claude/skills/install-claudet-rules/`. Resolve the repo root from the symlink target — works on any PC where `make install` has been run:
-
-```bash
-SKILL_REAL=$(readlink -f "$HOME/.claude/skills/install-claudet-rules/SKILL.md")
-SRC=$(dirname "$(dirname "$(dirname "$SKILL_REAL")")")
-RULES_SRC="$SRC/.claude/rules"
+```
+Repo:    https://github.com/mechemsi/claude-template
+Clone:   git@github.com:mechemsi/claude-template.git   (or HTTPS form)
+Branch:  main
+Rules:   .claude/rules/*.md
 ```
 
-If `make install-copy` was used (no symlink), ask the user for the repo path.
+These are embedded in the skill so it works even when no local clone is on the machine.
+
+## Locate the source (in priority order)
+
+Resolve `$RULES_SRC` by trying these in order:
+
+### 1. Local clone via symlink (preferred — fast, offline-capable)
+
+```bash
+SKILL_LINK="$HOME/.claude/skills/install-claudet-rules"
+if [ -L "$SKILL_LINK" ]; then
+  SKILL_REAL=$(readlink -f "$SKILL_LINK/SKILL.md")
+  SRC=$(dirname "$(dirname "$(dirname "$SKILL_REAL")")")
+  [ -d "$SRC/.git" ] && SOURCE_KIND="local"
+fi
+```
+
+### 2. Freshness check (only if local source resolved)
+
+```bash
+if [ "$SOURCE_KIND" = "local" ]; then
+  # Read-only: fetch but don't merge
+  git -C "$SRC" fetch --quiet origin main 2>/dev/null \
+    && BEHIND=$(git -C "$SRC" rev-list --count HEAD..origin/main 2>/dev/null || echo 0) \
+    || BEHIND="?"   # offline — proceed with what we have
+
+  DIRTY=$(git -C "$SRC" status --porcelain | head -1)
+
+  if [ "$BEHIND" != "0" ] && [ "$BEHIND" != "?" ]; then
+    echo "Local claudet is $BEHIND commits behind origin/main."
+    if [ -z "$DIRTY" ]; then
+      echo "Pull now? (recommended — your tree is clean)"
+      # On yes: git -C "$SRC" pull --ff-only origin main
+    else
+      echo "Local claudet has uncommitted changes. NOT auto-pulling."
+      echo "Either commit/stash and re-run, or proceed with stale rules."
+    fi
+  fi
+fi
+```
+
+### 3. GitHub fallback (when there is no local clone)
+
+If `$SOURCE_KIND` is still empty — no symlink, or symlink broken (e.g. `make install-copy` was used and the repo was later deleted):
+
+```bash
+echo "No local claudet clone found. Shallow-clone from GitHub? (y/n)"
+# On yes:
+SRC=$(mktemp -d -t claudet-XXXXXXXX)
+git clone --depth 1 --branch main \
+  https://github.com/mechemsi/claude-template.git "$SRC"
+SOURCE_KIND="ephemeral"
+trap 'rm -rf "$SRC"' EXIT     # clean up the temp clone when done
+```
+
+If the user declines or has no network, abort with a clear message — never silently fall back to a possibly-corrupt or partial source.
+
+### 4. Set RULES_SRC
+
+```bash
+RULES_SRC="$SRC/.claude/rules"
+[ -d "$RULES_SRC" ] || { echo "FATAL: $RULES_SRC missing in $SRC"; exit 1; }
+```
+
+Report which source was used:
+
+```
+Using claudet source:
+  kind:    local | ephemeral
+  path:    /home/domas/pr/claudet  | /tmp/claudet-XXXX
+  commit:  cb8165a (main)
+  status:  up to date | 3 commits behind | offline | freshly cloned
+```
 
 ## Workflow
 
@@ -140,6 +211,9 @@ If the project has rules NOT in claudet (e.g. `payment-compliance.md`), leave th
 - Copying every rule blindly when the project has legitimate divergence (e.g. a Go project shouldn't take the TS-specific `code-style.md`).
 - Forgetting to update `CLAUDE.md` to reference newly-installed rules — they exist on disk but aren't loaded.
 - Running this in the claudet repo itself.
+- Using a stale local clone without checking freshness — the freshness step above is **not optional**; always at least `git fetch` before reading rules.
+- Leaving the `mktemp` ephemeral clone behind — the `trap rm` on EXIT is required, otherwise `/tmp` accumulates clones over time.
+- Auto-pulling claudet when the user has uncommitted local changes — never. Warn and let the user resolve.
 
 ## Related
 
