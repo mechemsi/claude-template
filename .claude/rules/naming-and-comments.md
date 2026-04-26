@@ -100,7 +100,7 @@ function getFullName(user) { ... }
 
 4. **TODOs / FIXMEs** — must include owner and date.
    ```ts
-   // TODO(domas, 2026-04-26): replace with new pricing engine after Q3 launch.
+   // TODO(alex, 2026-04-26): replace with new pricing engine after Q3 launch.
    // FIXME(team-payments, 2026-05-01): race condition under high concurrency.
    ```
 

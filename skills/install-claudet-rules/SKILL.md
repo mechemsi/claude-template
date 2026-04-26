@@ -102,8 +102,8 @@ Report which source was used:
 ```
 Using claudet source:
   kind:    local | ephemeral
-  path:    /home/domas/pr/claudet  | /tmp/claudet-XXXX
-  commit:  cb8165a (main)
+  path:    ~/path/to/claudet  |  /tmp/claudet-XXXXXXXX
+  commit:  <sha> (main)
   status:  up to date | 3 commits behind | offline | freshly cloned
 ```
 

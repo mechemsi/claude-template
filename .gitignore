@@ -1,0 +1,24 @@
+# Personal Claude Code settings — per-developer, never committed
+.claude/settings.local.json
+CLAUDE.local.md
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# Node (in case the template gets used to build something here)
+node_modules/
+dist/
+build/
+coverage/
