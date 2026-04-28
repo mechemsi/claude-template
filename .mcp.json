@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-mcp.json",
+  "mcpServers": {
+    "_example_filesystem": {
+      "_comment": "Remove the leading underscore from a server key to enable it. MCP server config MUST live at repo root in .mcp.json so all team members get the same servers.",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
+    },
+    "_example_postgres": {
+      "_comment": "Connects to a local Postgres for read-only schema/query access during development.",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost:5432/dev"]
+    }
+  }
+}

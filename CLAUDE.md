@@ -47,7 +47,31 @@ claudedocs/
   runbooks/         # Step-by-step operational guides
 ```
 
-> **Skills.** Architecture and process skills (SOLID, design patterns, code smells, DRY/KISS/YAGNI, PRD writing, deploy, security review) live in this repo under `skills/` as the canonical source. They are version-controlled here and installed user-global by running `make install` from the repo root, which symlinks `./skills/*` into `~/.claude/skills/`. After install they auto-trigger across every project. New shared skills go in this repo's `skills/` directory; only project-specific skills should ever live in a project's `.claude/skills/`.
+> **Skills — dual layout.** This template uses two skill locations:
+>
+> - **`skills/`** at repo root is the **shared library**: architecture and process skills (SOLID, design patterns, code smells, DRY/KISS/YAGNI, PRD writing, deploy, security review). Installed user-global by running `make install` from the repo root, which symlinks `./skills/*` into `~/.claude/skills/`. After install they auto-trigger across every project. New cross-project skills go here.
+> - **`.claude/skills/`** in a project is the **project-local slot**: skills scoped to *this* codebase only — workflows that reference paths, services, or domain concepts that exist only here. They ship with the project, are checked into git, and never leak into other projects.
+>
+> See `.claude/skills/README.md` for the rule on which slot to use.
+
+## Claude Code Surface Area
+
+This template ships scaffolding for the full Claude Code surface so a fresh project starts wired-up:
+
+```
+.mcp.json                  # MCP servers — must live at repo root, applies to all teammates
+.claude/
+  settings.json            # permissions, env, hook + statusline registry
+  settings.local.json      # personal overrides (gitignored)
+  hooks/                   # deterministic lifecycle scripts (PostToolUse, SessionStart, PreCompact)
+  commands/                # slash commands (/deploy, /review, /fix-issue)
+  agents/                  # subagents with isolated context windows
+  skills/                  # project-local skills (see "Skills" above)
+  rules/                   # path-scoped style/convention rules
+  output-styles/           # custom response formats (e.g. terse)
+  plugins/                 # bundled commands+agents+skills+MCP under one namespace
+  statusline.sh            # bottom-bar display script
+```
 
 ## Documentation Workflow
 
