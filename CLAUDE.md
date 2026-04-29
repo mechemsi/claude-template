@@ -21,9 +21,11 @@ This is the shared team instructions file. It is committed to git and applies to
 - Manage dependencies per `.claude/rules/dependency-management.md`
 
 ## Git Conventions
+- Follow commit and branching rules in `.claude/rules/git-commits.md`
 - Branch naming: `feat/`, `fix/`, `chore/`, `docs/`
 - Commit style: Conventional Commits (`feat: add login page`)
 - Never commit directly to `main` — always open a PR
+- **Never commit as Claude or attribute Claude as a co-author** — see `.claude/rules/git-commits.md`
 
 ## Project Structure
 ```
