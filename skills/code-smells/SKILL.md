@@ -26,6 +26,7 @@ Code smells are surface symptoms of deeper design issues. Each smell maps to one
 | Feature Envy | Method using another class's data | Move Method |
 | Data Clumps | Same group of params travels together | Extract Class |
 | Primitive Obsession | Stringly-typed domain data | Replace Primitive with Object / Branded Types |
+| Magic Literals | Unnamed numbers/strings sprinkled in code | Extract Constant / Replace with Enum or Union Type |
 | Switch Statements | Type-based branching | Replace Conditional with Polymorphism (Strategy/State) |
 | Shotgun Surgery | One change → many files | Move Method/Field, consolidate |
 | Divergent Change | One class changes for many reasons | Extract Class (SRP fix) |
@@ -98,6 +99,83 @@ type UserId = string & { readonly __brand: 'UserId' };
 class Money { constructor(readonly cents: number) {} }
 function transfer(from: AccountId, to: UserId, amount: Money): void { /* ... */ }
 ```
+
+## Magic Literals
+
+> A bare number or string literal whose meaning is not obvious from the value itself, especially when the same literal appears in more than one place. Distinct from Primitive Obsession (which is about *types*) — this is about *unnamed values*.
+
+### Magic numbers
+
+```ts
+// ❌ What is 0.21? What is 86400?
+const tax = subtotal * 0.21;
+if (Date.now() - session.createdAt > 86400 * 1000) logout();
+
+// ✅ Names carry the meaning
+const VAT_RATE = 0.21;
+const SESSION_LIFETIME_MS = 24 * 60 * 60 * 1000;
+const tax = subtotal * VAT_RATE;
+if (Date.now() - session.createdAt > SESSION_LIFETIME_MS) logout();
+```
+
+### Magic strings — finite domain → enum or union
+
+```ts
+// ❌ String literals scattered across the codebase
+if (order.status === 'pending')   { /* ... */ }
+if (order.status === 'PENDING')   { /* typo: silently never matches */ }
+order.status = 'shipped';
+
+// ✅ Closed set → string-literal union (TS-idiomatic) with a constant map
+type OrderStatus = 'pending' | 'paid' | 'shipped' | 'cancelled';
+const ORDER_STATUS = {
+  Pending:   'pending',
+  Paid:      'paid',
+  Shipped:   'shipped',
+  Cancelled: 'cancelled',
+} as const satisfies Record<string, OrderStatus>;
+
+if (order.status === ORDER_STATUS.Pending) { /* ... */ }
+order.status = ORDER_STATUS.Shipped;
+```
+
+Use a `const`-object + union type instead of a TypeScript `enum` — `enum` has tree-shaking and runtime quirks, and the const-object pattern gives the same exhaustiveness.
+
+### Security-sensitive values → environment variables, not constants
+
+A constant is the right home for *domain* values (tax rate, retry count, status names). It is **not** the right home for *secrets or per-environment config* (API keys, DB URLs, JWT secrets, third-party endpoints that differ per env). Those go in `process.env.*` with boot-time validation.
+
+```ts
+// ❌ Hardcoded secret — leaks via git history forever
+const STRIPE_KEY = 'sk_live_abc123…';
+
+// ❌ Hardcoded per-env URL
+const API_BASE = 'https://api.staging.example.com';
+
+// ✅ Env var, validated at boot
+import { z } from 'zod';
+const env = z.object({
+  STRIPE_SECRET_KEY: z.string().startsWith('sk_'),
+  API_BASE_URL:      z.string().url(),
+}).parse(process.env);
+```
+
+Decision rule:
+
+| Value type | Where it lives |
+|------------|----------------|
+| Domain constant (rate, limit, status name, role) | Named `const` / union type / const-object map |
+| Secret (API key, JWT secret, DB password) | `process.env.*`, never committed |
+| Per-environment config (URLs, feature flags) | `process.env.*` |
+| Test fixture / sample value | Test file, clearly labelled |
+
+See `12-factor-app` (III. Config) and `security-review` (Secrets & Config) for the env-var side.
+
+### When NOT to extract
+
+- The literal is used exactly once and its meaning is obvious in context (`array[0]`, `n + 1`, `'\n'`).
+- The value is the literal — e.g. a regex `^[a-z]+$` is clearer inline than as `LOWERCASE_RE`.
+- Test inputs/expected outputs — extracting them obscures what the test asserts.
 
 ## Feature Envy
 
