@@ -1,0 +1,49 @@
+# Composite action: package-manager-aware Node setup with cache + install.
+# Used by the reusable _ci.yml workflow. See skills/ci-cd-pipeline/SKILL.md.
+#
+# Pin action @vN refs to full SHAs before adopting in a real repo.
+
+name: setup-node
+description: Set up Node + selected package manager, restore cache, install deps.
+
+inputs:
+  node-version:
+    required: true
+  package-manager:
+    required: true  # one of: npm | pnpm | yarn
+
+runs:
+  using: composite
+  steps:
+    - name: Validate package-manager input
+      shell: bash
+      env:
+        PM: ${{ inputs.package-manager }}
+      run: |
+        case "$PM" in
+          npm|pnpm|yarn) ;;
+          *) echo "::error::package-manager must be one of: npm, pnpm, yarn (got: $PM)"; exit 1 ;;
+        esac
+
+    - name: Install pnpm
+      if: inputs.package-manager == 'pnpm'
+      uses: pnpm/action-setup@v3
+      with:
+        run_install: false
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: ${{ inputs.package-manager }}
+
+    - name: Install dependencies
+      shell: bash
+      env:
+        PM: ${{ inputs.package-manager }}
+      run: |
+        set -euo pipefail
+        case "$PM" in
+          npm)  npm ci ;;
+          pnpm) pnpm install --frozen-lockfile ;;
+          yarn) yarn install --immutable ;;
+        esac

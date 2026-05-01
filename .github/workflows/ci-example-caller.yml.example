@@ -1,0 +1,27 @@
+# Example: how a downstream repo consumes _ci.yml.
+#
+# Save this as `.github/workflows/ci.yml` in YOUR project (drop the .example).
+#
+# Replace `@main` with a pinned commit SHA of the claude-template repo
+# before adopting. Configure Renovate to keep it current.
+
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    uses: mechemsi/claude-template/.github/workflows/_ci.yml@main
+    with:
+      node-version: '20'
+      package-manager: pnpm
+      coverage-floor: 80
+      pr-size-limit: 400
+      run-integration-tests: true
+      run-dead-code: true
+      run-build: true
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

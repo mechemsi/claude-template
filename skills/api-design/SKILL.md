@@ -155,7 +155,22 @@ A consistent error shape, always. (See also `.claude/rules/api-conventions.md` f
 - `details`: structured context.
 - `requestId`: present on every response (success or error) — supports cross-team triage.
 
+## API gate (shared-secret header)
+
+Before per-user authentication, every request to the API is screened by a shared-secret header. This is a coarse, environment-wide filter — not a substitute for user auth — that keeps the API off the public internet for anyone without the deployment secret.
+
+- Header: `X-API-Secret`. Reject with `401` if missing or wrong, before reading the body or hitting the DB.
+- Source: an environment variable (`API_SECRET`) — never hardcoded, never logged, never echoed in error responses.
+- Comparison: constant-time (`crypto.timingSafeEqual` or equivalent). `===` leaks length and prefix via timing.
+- Scope: enforced once, in middleware that wraps the whole `/api` tree. Per-route opt-in is an anti-pattern — a forgotten route becomes a public route.
+- Whitelist: an explicit, short list of paths exempt from the gate (typically `/api/health` for the load balancer). Each exemption needs a comment justifying it.
+- Boot check: if `API_SECRET` is unset, the server refuses to start. Never fall back to "no gate".
+
+This is layered with — not instead of — per-user authentication below. A leaked session token alone cannot reach the API; an attacker also needs the deployment secret. A leaked deployment secret alone gets you to the auth wall, not past it.
+
 ## Authentication
+
+Runs *after* the API gate has passed.
 
 - Bearer tokens in `Authorization: Bearer <token>`. Never in query strings (logged everywhere).
 - API keys: rotate-able, revocable, per-environment, scoped.

@@ -1,0 +1,376 @@
+# Reusable CI workflow — see skills/ci-cd-pipeline/SKILL.md "Canonical jobs"
+#
+# Consumers call this from their own repo with:
+#
+#   jobs:
+#     ci:
+#       uses: mechemsi/claude-template/.github/workflows/_ci.yml@<sha>
+#       with:
+#         node-version: '20'
+#         package-manager: pnpm
+#         coverage-floor: 80
+#       secrets:
+#         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+#
+# All untrusted PR inputs (title, head ref, body) are passed via `env:` and
+# referenced as "$VAR" inside `run:` blocks — never interpolated directly into
+# shell. See https://github.blog/security/vulnerability-research/how-to-catch-github-actions-workflow-injections-before-attackers-do/
+#
+# Action references use @v<N> tags here for readability. Before adopting in a
+# real repo, replace each tag with the full commit SHA (per skill rule
+# "Pinned action SHAs"). Configure Renovate to keep them current.
+
+name: ci-reusable
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        type: string
+        default: '20'
+      package-manager:
+        type: string
+        default: 'pnpm'  # one of: npm | pnpm | yarn
+      coverage-floor:
+        type: number
+        default: 80
+      pr-size-limit:
+        type: number
+        default: 400
+      run-integration-tests:
+        type: boolean
+        default: true
+      run-dead-code:
+        type: boolean
+        default: true
+      run-build:
+        type: boolean
+        default: true
+    secrets:
+      CODECOV_TOKEN:
+        required: false
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. pr-guards — cheap diff-level checks, fail fast
+  # ---------------------------------------------------------------------------
+  pr-guards:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: PR size limit
+        env:
+          LIMIT: ${{ inputs.pr-size-limit }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          changed=$(git diff --shortstat "$BASE_SHA" "$HEAD_SHA" | awk '{print $4 + $6}')
+          changed=${changed:-0}
+          echo "Changed lines: $changed (limit: $LIMIT)"
+          if [ "$changed" -gt "$LIMIT" ]; then
+            echo "::error::PR exceeds line limit ($changed > $LIMIT). Split it."
+            exit 1
+          fi
+
+      - name: Conventional Commits title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "$PR_TITLE" | grep -qE '^(feat|fix|chore|docs|refactor|test|perf|ci|build|style|revert)(\([a-z0-9-]+\))?!?: .+'; then
+            echo "::error::PR title must follow Conventional Commits."
+            exit 1
+          fi
+
+      - name: No test-skips introduced in diff
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if git diff "$BASE_SHA" "$HEAD_SHA" -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.py' '*.go' \
+              | grep -E '^\+' \
+              | grep -vE '^\+\+\+' \
+              | grep -E '\.skip\(|\bxit\(|\bit\.only\(|\bdescribe\.only\(|@pytest\.mark\.skip|@unittest\.skip|t\.Skip\(' ; then
+            echo "::error::Diff introduces a test-skip. Remove or document via CODEOWNERS exception."
+            exit 1
+          fi
+
+      - name: No TODO/FIXME leakage in non-doc files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          mapfile -t code_files < <(
+            git diff --name-only "$BASE_SHA" "$HEAD_SHA" \
+              | grep -vE '\.(md|txt)$|^claudedocs/|^docs/' \
+              || true
+          )
+          if [ "${#code_files[@]}" -eq 0 ]; then
+            exit 0
+          fi
+          if git diff "$BASE_SHA" "$HEAD_SHA" -- "${code_files[@]}" \
+              | grep -E '^\+' \
+              | grep -vE '^\+\+\+' \
+              | grep -E '\b(TODO|FIXME|XXX|HACK)\b' ; then
+            echo "::error::Diff introduces TODO/FIXME/XXX/HACK in code. File a tracked issue instead."
+            exit 1
+          fi
+
+  # ---------------------------------------------------------------------------
+  # 2. secret-scan — gitleaks on the diff
+  # ---------------------------------------------------------------------------
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  # ---------------------------------------------------------------------------
+  # 3. dep-review — license + CVE diff on new deps (PR only)
+  # ---------------------------------------------------------------------------
+  dep-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+
+  # ---------------------------------------------------------------------------
+  # 4. lint
+  # ---------------------------------------------------------------------------
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+        with:
+          node-version: ${{ inputs.node-version }}
+          package-manager: ${{ inputs.package-manager }}
+      - env:
+          PM: ${{ inputs.package-manager }}
+        run: $PM run lint
+
+  # ---------------------------------------------------------------------------
+  # 5. typecheck
+  # ---------------------------------------------------------------------------
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+        with:
+          node-version: ${{ inputs.node-version }}
+          package-manager: ${{ inputs.package-manager }}
+      - env:
+          PM: ${{ inputs.package-manager }}
+        run: $PM run typecheck
+
+  # ---------------------------------------------------------------------------
+  # 6. sast — multi-language Semgrep
+  # ---------------------------------------------------------------------------
+  sast:
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - run: semgrep ci --config=p/default --config=p/owasp-top-ten --config=p/typescript --error
+
+  # ---------------------------------------------------------------------------
+  # 7. sca — package-manager native + osv-scanner
+  # ---------------------------------------------------------------------------
+  sca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+        with:
+          node-version: ${{ inputs.node-version }}
+          package-manager: ${{ inputs.package-manager }}
+      - name: Native audit
+        env:
+          PM: ${{ inputs.package-manager }}
+        run: |
+          set -euo pipefail
+          case "$PM" in
+            npm)   npm audit --audit-level=high ;;
+            pnpm)  pnpm audit --prod --audit-level high ;;
+            yarn)  yarn npm audit --severity high --recursive ;;
+            *) echo "::error::unknown package manager: $PM"; exit 1 ;;
+          esac
+      - uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v1
+        with:
+          scan-args: |
+            --recursive
+            ./
+
+  # ---------------------------------------------------------------------------
+  # 8. dead-code
+  # ---------------------------------------------------------------------------
+  dead-code:
+    if: ${{ inputs.run-dead-code }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+        with:
+          node-version: ${{ inputs.node-version }}
+          package-manager: ${{ inputs.package-manager }}
+      - env:
+          PM: ${{ inputs.package-manager }}
+        run: $PM dlx knip --reporter compact
+
+  # ---------------------------------------------------------------------------
+  # 9. test-unit
+  # ---------------------------------------------------------------------------
+  test-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+        with:
+          node-version: ${{ inputs.node-version }}
+          package-manager: ${{ inputs.package-manager }}
+      - env:
+          PM: ${{ inputs.package-manager }}
+        run: $PM run test:unit -- --coverage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit
+          path: coverage/
+          if-no-files-found: warn
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # 10. test-integration — boots a real Postgres
+  # ---------------------------------------------------------------------------
+  test-integration:
+    if: ${{ inputs.run-integration-tests }}
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://test:test@localhost:5432/test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+        with:
+          node-version: ${{ inputs.node-version }}
+          package-manager: ${{ inputs.package-manager }}
+      - env:
+          PM: ${{ inputs.package-manager }}
+        run: $PM run test:integration -- --coverage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-integration
+          path: coverage/
+          if-no-files-found: warn
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # 11. coverage-gate — total floor + diff-cover ≥ floor
+  # ---------------------------------------------------------------------------
+  coverage-gate:
+    needs: [test-unit, test-integration]
+    if: always() && needs.test-unit.result == 'success' && (needs.test-integration.result == 'success' || needs.test-integration.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage-unit
+          path: coverage-unit
+        continue-on-error: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage-integration
+          path: coverage-integration
+        continue-on-error: true
+      - name: Merge & enforce floor
+        env:
+          FLOOR: ${{ inputs.coverage-floor }}
+        run: |
+          set -euo pipefail
+          mkdir -p coverage-merged
+          find coverage-unit coverage-integration -name 'lcov.info' \
+            -exec cat {} + > coverage-merged/lcov.info 2>/dev/null || true
+          if [ ! -s coverage-merged/lcov.info ]; then
+            echo "::error::No coverage data found. Did test jobs emit lcov.info?"
+            exit 1
+          fi
+          npx --yes lcov-summary coverage-merged/lcov.info > summary.txt
+          cat summary.txt
+          pct=$(grep -oP 'Lines\s+:\s+\K[0-9.]+' summary.txt | head -1)
+          echo "Total line coverage: ${pct}% (floor: ${FLOOR}%)"
+          awk -v p="$pct" -v f="$FLOOR" 'BEGIN { exit (p+0 < f+0) }'
+      - name: Diff-cover ≥ floor
+        if: github.event_name == 'pull_request'
+        env:
+          FLOOR: ${{ inputs.coverage-floor }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          pip install --quiet diff-cover
+          diff-cover coverage-merged/lcov.info \
+            --compare-branch="$BASE_SHA" \
+            --fail-under="$FLOOR"
+      - name: Upload to Codecov
+        if: ${{ secrets.CODECOV_TOKEN != '' }}
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage-merged/lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+  # ---------------------------------------------------------------------------
+  # 12. build
+  # ---------------------------------------------------------------------------
+  build:
+    if: ${{ inputs.run-build }}
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+        with:
+          node-version: ${{ inputs.node-version }}
+          package-manager: ${{ inputs.package-manager }}
+      - env:
+          PM: ${{ inputs.package-manager }}
+        run: $PM run build

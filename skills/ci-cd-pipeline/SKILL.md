@@ -171,6 +171,116 @@ Use a helper such as `peter-evans/create-issue-from-file` or a small `gh issue` 
 | PR / push (gate) | **Fail the build** | Continue |
 | Scheduled (dashboard) | Open/update issue, exit 0 | Close issue, exit 0 |
 
+## Canonical jobs
+
+When implementing the gates, use a fixed set of `job:` names so workflows are interchangeable across repos and reusable `workflow_call` templates work without per-repo edits. Branch-protection "required status checks" reference these names — renaming a job silently breaks merge protection.
+
+### Always required (PR-gating, every repo)
+
+| Job | Gates implemented | Notes |
+|-----|-------------------|-------|
+| `pr-guards` | size limit, Conventional Commits title, no `.skip` / `it.only` / `xit(`, no `TODO` / `FIXME` in non-doc files, AI-disclosure | Cheap, runs first, fails fast |
+| `secret-scan` | gitleaks/trufflehog on the diff | Independent runner; never `needs:` anything |
+| `lint` | format + lint blocking | One job; format and lint inside |
+| `typecheck` | strict typing (`tsc --noEmit --strict` / `mypy --strict` / `go vet`) | Separate from lint — fails fast |
+| `test-unit` | unit tests | Matrix on runtime versions if applicable |
+| `test-integration` | integration tests | Brings up DB / queue via `services:` |
+| `coverage-gate` | line floor + diff-cover ≥ floor | `needs: [test-unit, test-integration]` |
+| `sast` | semgrep + lang-specific (bandit / eslint-plugin-security / gosec) | Independent |
+| `sca` | `npm audit` / `pip-audit` / `osv-scanner` on the PR's lockfile | Diff scope, not repo-wide |
+| `dep-review` | GitHub `dependency-review-action` | License + CVE diff on new deps |
+| `dead-code` | `knip` / `ts-prune` / `vulture` / `depcheck` | |
+| `build` | production build | `needs: [lint, typecheck]` |
+
+### Required when applicable
+
+| Job | Triggered when | Gates |
+|-----|---------------|-------|
+| `migrate-check` | repo has `prisma/`, `migrations/`, `db/migrate` | up + down dry-run on throwaway Postgres |
+| `schema-diff` | repo has `openapi.yaml` / `*.proto` / GraphQL SDL | `oasdiff` / `buf breaking` / GraphQL schema diff |
+| `docker-build-scan` | repo has `Dockerfile` | Build image, then `trivy image` (also scan base) |
+| `iac-scan` | repo has `Dockerfile` / `compose.yml` / `*.tf` / `k8s/` | `checkov` + `tfsec` |
+| `bundle-size` | frontend repo | `size-limit` against budget |
+| `lighthouse` | frontend repo | Lighthouse CI score floor |
+| `load-smoke` | backend with perf budget | `k6` / `locust` against ephemeral env |
+| `mutation-test` | repo opted into mutation testing | `stryker` / `mutmut` on critical modules |
+
+### AI-specific (when repo has AI paths)
+
+| Job | Gates |
+|-----|-------|
+| `ai-eval` | deterministic eval suite; blocks regressions |
+| `ai-cost-budget` | cost + latency per AI endpoint reported in PR comment |
+| `prompt-injection-lint` | PII detection + red-team fixtures on user-input paths |
+| `tool-call-schema` | JSON Schema validation on every LLM tool-call argument |
+
+### Release-only (on tag / release event)
+
+| Job | Gates |
+|-----|-------|
+| `sbom` | `syft` → SPDX/CycloneDX, attached to the release |
+| `provenance` | `actions/attest-build-provenance` (SLSA ≥ 2) |
+| `publish` | `npm publish` / Docker push / etc. — `needs:` everything green |
+
+### Deploy (separate workflow, gated by required status checks)
+
+| Job | Trigger | Notes |
+|-----|---------|-------|
+| `deploy-preview` | `pull_request` | Per-PR ephemeral environment |
+| `deploy-staging` | push to `main` | Auto-deploy on green |
+| `deploy-production` | release tag | Environment protection rule + manual approval |
+| `smoke-postdeploy` | `needs: deploy-*` | Required status; only this marks the deploy "done" |
+
+### Scheduled audits (separate workflow, exit 0 — see "Audit wiring" above)
+
+| Job | Cadence | What it audits |
+|-----|---------|----------------|
+| `audit-deps-weekly` | weekly | full-lockfile vuln scan; manages a single audit issue |
+| `audit-outdated-weekly` | weekly | `npm outdated` / `pip list --outdated` |
+| `audit-licenses-weekly` | weekly | license-policy drift |
+| `audit-image-weekly` | weekly | rebuild + rescan latest base image |
+| `audit-deadcode-weekly` | weekly | accumulation report |
+| `audit-sbom-diff` | per release | diff vs previous release SBOM |
+| `audit-complexity-weekly` | weekly | duplicate-code + cyclomatic complexity drift |
+
+### Branch-protection required status checks
+
+The minimum that must be green before merging to a protected branch:
+
+```
+pr-guards
+secret-scan
+lint
+typecheck
+test-unit
+test-integration
+coverage-gate
+sast
+sca
+dead-code
+build
+```
+
+Plus, when applicable to the repo:
+
+```
+migrate-check
+schema-diff
+docker-build-scan
+ai-eval
+smoke-postdeploy
+```
+
+### Naming rules
+
+- **Lowercase, hyphenated.** Matches GitHub's job-slug convention.
+- **One concern per job.** Don't merge `lint` and `typecheck` into `quality` — branch protection becomes coarse and a typecheck failure reruns lint.
+- **`needs:` only what's actually consumed.** Coverage genuinely needs tests; lint doesn't need typecheck. Excessive `needs:` serialises the pipeline for no benefit.
+- **Never rename a job without auditing branch protection.** Required-status-check names are referenced by the GitHub API; a rename either silently skips the check or blocks every merge until the rule is updated.
+- **Reusable workflow ships these names verbatim.** A repo consuming `_ci.yml` should not need to remap.
+
+A reference reusable implementation lives in this template at `.github/workflows/_ci.yml` — downstream repos call it with `uses: mechemsi/claude-template/.github/workflows/_ci.yml@<sha>`.
+
 ## Auditing an existing pipeline
 
 Use this as a checklist when reviewing a project's CI. For each row, mark the project's status: ✅ in place, **add** to introduce, **review** if uncertain, **—** if not applicable.

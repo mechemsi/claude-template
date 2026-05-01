@@ -72,8 +72,38 @@ if (!result.success) {
 }
 ```
 
+## API Gate (shared-secret header)
+
+Every endpoint under `/api/**` is gated by a shared-secret header. This runs **before** session/role checks so that a leaked session alone is not enough to reach the API.
+
+- Header name: `X-API-Secret`
+- Source of truth: `process.env.API_SECRET` (set per-environment, never committed)
+- Failure mode: respond `401` with `error.code = 'MISSING_API_SECRET'` and no body details
+- Comparison: constant-time (`crypto.timingSafeEqual`) — never `===`
+- Enforcement: a single middleware applied to the whole `/api` tree. Per-route opt-in is forbidden — the default is "gated", and exceptions live in one whitelist.
+
+```ts
+// src/server/middleware/api-gate.ts
+import { timingSafeEqual } from 'node:crypto'
+
+const expected = Buffer.from(process.env.API_SECRET ?? '')
+
+export function checkApiSecret(headerValue: string | undefined): boolean {
+  if (!expected.length || !headerValue) return false
+  const got = Buffer.from(headerValue)
+  if (got.length !== expected.length) return false
+  return timingSafeEqual(got, expected)
+}
+```
+
+Whitelist (no secret required):
+- `/api/health` — liveness probe used by the load balancer
+- Anything else must be explicitly added with a comment explaining why
+
+If `API_SECRET` is unset at boot, the server must refuse to start. Silent fallback to "no gate" is forbidden.
+
 ## Authentication
-- All protected routes check for a valid session using `getServerSession()`
+- All protected routes check for a valid session using `getServerSession()` **after** the API gate has passed
 - Return 401 (not 403) when no session exists
 - Return 403 when session exists but lacks permission
 

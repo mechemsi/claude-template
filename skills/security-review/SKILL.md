@@ -17,7 +17,11 @@ Perform a deep security audit of code changes or a specified module.
 ### Step 2 — Run Security Checklist
 
 #### Authentication & Authorization
-- [ ] All protected routes check session/token before processing
+- [ ] Every API endpoint requires a shared-secret header (e.g. `X-API-Secret`); requests missing or with a wrong value return `401` before any other processing — including health checks unless explicitly whitelisted
+- [ ] The shared secret is read from `process.env.API_SECRET` (or equivalent), never hardcoded, never committed, never logged
+- [ ] Comparison uses a constant-time check (`crypto.timingSafeEqual`), not `===`, to avoid timing attacks
+- [ ] The secret check runs in middleware applied to the whole `/api` tree, not added per-route (so a forgotten route can't accidentally be public)
+- [ ] All protected routes check session/token *after* the shared-secret check passes
 - [ ] Role checks happen server-side, never trust client-sent roles
 - [ ] Tokens are short-lived and properly invalidated on logout
 - [ ] Password reset flows are rate-limited and use secure tokens
