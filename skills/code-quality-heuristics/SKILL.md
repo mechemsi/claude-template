@@ -108,3 +108,4 @@ About to add abstraction / extract / generalize?
 - `code-smells` — Long Method, Shotgun Surgery, Divergent Change are the symptoms these heuristics prevent.
 - `refactoring-discipline` — once you've decided a refactor is justified, this is the *how*.
 - `naming-and-comments` — most "premature abstraction" smells are actually naming smells in disguise.
+- `performance-optimization` — YAGNI applies to performance budgets too; don't pay complexity tax for headroom you'll never use.

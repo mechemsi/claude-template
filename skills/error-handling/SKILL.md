@@ -188,3 +188,4 @@ When a downstream service is failing, don't keep hammering it. After N failures 
 - `logging-observability` — structured logs with correlation IDs.
 - `concurrency-and-idempotency` — retry policy belongs here; idempotency is what makes retry safe.
 - `caching-strategies` — cache *miss* is normal; cache *failure* (Redis unreachable) needs an explicit fallback policy at this layer.
+- `performance-optimization` — timeouts, circuit breakers, and graceful degradation are perf primitives, not just reliability ones.

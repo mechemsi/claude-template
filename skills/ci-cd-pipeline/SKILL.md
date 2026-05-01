@@ -391,3 +391,4 @@ Everything above is boring, well-trodden, and low-cost. Skipping any of it on AI
 - `db-migration-safety` — pair with a CI gate that flags `DROP`/`RENAME`/`NOT NULL`/large-index DDL in migration diffs.
 - `feature-flags-and-rollout` — CI matrix expansion for active rollouts; required-checks-green gate before flag flips.
 - `code-review-discipline` — CI gates are the floor; review is the ceiling. Pipeline says "ready for review", not "ready to merge".
+- `performance-optimization` — perf regression gates after a hot-path fix live in the pipeline.

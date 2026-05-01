@@ -174,3 +174,4 @@ Coverage tells you what's tested. It doesn't tell you it's *well* tested.
 - `refactoring-discipline` — characterization tests come from this skill; they're the safety net refactors depend on.
 - `concurrency-and-idempotency` — race-condition tests need deterministic harnesses; lean on integration tests with controlled timing.
 - `code-review-discipline` — read tests first when reviewing; tests-as-spec is the reviewer's primary tool.
+- `performance-optimization` — perf tests are a level of test; deterministic, fast feedback, regression-gated.

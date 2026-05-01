@@ -286,3 +286,4 @@ Like `db-migration-safety`, the principles are universal but the toolchain varie
 - `logging-observability` — hit/miss/eviction/stampede/stale-serve metrics are mandatory; without them caching is faith.
 - `12-factor-app` — caches are backing services (factor IV); same connection-string discipline as the database.
 - `security-review` — caching authenticated content needs `Vary: Authorization`-equivalent thinking; PII in caches has retention obligations.
+- `performance-optimization` — caching is one optimization lever; reach for it after measuring, not before.

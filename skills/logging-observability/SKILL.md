@@ -168,3 +168,4 @@ const log = pino({
 - `error-handling` — what errors *are*; this skill covers how they're *seen*.
 - `12-factor-app` — factor XI says treat logs as event streams; don't manage log files in-app.
 - `security-review` — redaction, PII handling, audit trails.
+- `performance-optimization` — RED/USE metrics and traces are how you spot a perf regression in prod.

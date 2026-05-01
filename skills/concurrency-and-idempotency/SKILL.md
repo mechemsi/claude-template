@@ -328,3 +328,4 @@ Per `layered-architecture`: the idempotency boundary is the service/handler laye
 - `logging-observability` — every retry, dedup hit, lease acquisition, and version conflict must be logged with a correlation ID.
 - `layered-architecture` — idempotency boundary lives in the service/handler, never the controller, never the repository.
 - `domain-modeling` — aggregates and version fields; saga compensations are domain events.
+- `performance-optimization` — capped concurrency, batching, and backpressure are perf primitives that this skill makes safe.

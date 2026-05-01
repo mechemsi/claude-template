@@ -179,3 +179,4 @@ Different projects pin to different ORMs and database engines. Use this skill as
 - `concurrency-and-idempotency` — backfills must be batched, resumable, and idempotent; same primitives as retry-safe consumers.
 - `feature-flags-and-rollout` — never gate the schema itself behind a flag; only the *code path* using new columns. Schema must be safe regardless of flag state.
 - `code-review-discipline` — schema PRs are high-risk; require two reviewers and a paired migration-safety note.
+- `performance-optimization` — adding the missing index is a migration; treat it with this discipline.

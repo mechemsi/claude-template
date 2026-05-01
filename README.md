@@ -167,6 +167,7 @@ Skills are user-level, not per-project. They auto-trigger across every project o
 | `caching-strategies` | Cache patterns (cache-aside / read-through / write-*); stampede / hot-key mitigations; key versioning; TTL/eviction; HTTP cache headers |
 | `feature-flags-and-rollout` | Toggle taxonomy (release/experiment/ops/permission); ramp sequence; rollback by flag flip; flag debt; flag-vs-schema separation |
 | `code-review-discipline` | PR sizing; one-PR-one-purpose; review priority order; reviewer/author hygiene; reviewing AI code; CODEOWNERS for high-risk paths |
+| `performance-optimization` | Measure-first; latency hierarchy; bottleneck order (N+1, missing index, sync I/O, over-fetch); p99 ≠ mean; latency budgets; regression gates |
 
 **Process skills:**
 
@@ -324,6 +325,7 @@ Skills live at `~/.claude/skills/` (symlinked from this repo's `skills/`) and tr
 | **caching-strategies** | Adding a cache layer; designing TTLs/invalidation; stampede/hot-key risk; stale-data-after-write; choosing a cache pattern | Pattern matrix (cache-aside / read-through / write-* / refresh-ahead), failure-mode → mitigation matrix, key versioning, HTTP cache headers, multi-tier caches |
 | **feature-flags-and-rollout** | Putting a feature behind a flag; canary/blue-green/dark-launch; kill switch; old flag past launch date; flag debt | Toggle taxonomy (release/experiment/ops/permission), stable hash-on-actor evaluation, ramp sequence, audit log shape, telemetry tagging, schema-vs-flag separation |
 | **code-review-discipline** | Opening or reviewing a PR; PR over ~400 LOC; refactor mixed with feature; reviewing AI-generated code | PR sizing matrix, review priority order (correctness > security > tests > docs > style), reviewer/author hygiene, AI-code red flags, CODEOWNERS for high-risk paths |
+| **performance-optimization** | "Make it faster"; suspected N+1, missing index, or chatty API; SLO/p99 at risk; benchmarking on a laptop | Measure-first discipline, latency hierarchy, bottleneck-likelihood order, latency-budget allocation, throughput vs latency, regression gates in CI |
 | **writing-prd** | Starting a new user-facing feature | Guides PRD writing into `claudedocs/prds/` before a plan |
 | **bootstrap-claude-template** | Setting up a new project | Copies the template structure into a target directory |
 | **install-claudet-rules** | Syncing rules into an existing project | Diff-aware install/update of `.claude/rules/*.md` from claudet |
