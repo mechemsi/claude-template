@@ -388,3 +388,6 @@ Everything above is boring, well-trodden, and low-cost. Skipping any of it on AI
 - `error-handling`, `logging-observability` — paired with §6 lint rules (structured logs, trace IDs).
 - `12-factor-app` — release/runtime context for §4.
 - `testing-architecture` — coverage gate and mutation testing depth come from here.
+- `db-migration-safety` — pair with a CI gate that flags `DROP`/`RENAME`/`NOT NULL`/large-index DDL in migration diffs.
+- `feature-flags-and-rollout` — CI matrix expansion for active rollouts; required-checks-green gate before flag flips.
+- `code-review-discipline` — CI gates are the floor; review is the ceiling. Pipeline says "ready for review", not "ready to merge".

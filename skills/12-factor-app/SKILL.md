@@ -223,3 +223,4 @@ Migrations checked into the repo, reviewed in PRs, run on deploy. Backfills as s
 - `logging-observability` — factor XI in detail.
 - `error-handling` — graceful shutdown depends on careful error propagation.
 - `api-design` — factor IV: backing services pointed to by URL/credential.
+- `db-migration-safety` — factor V (build/release/run) and disposability assume schema changes are reversible at the deploy boundary.

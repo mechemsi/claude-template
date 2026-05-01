@@ -215,3 +215,5 @@ They're mirror images. Both point to misplaced responsibility.
 - `code-quality-heuristics` — DRY (real vs cosmetic), YAGNI (Speculative Generality).
 - `behavioral-patterns` — Strategy/State for polymorphism replacements.
 - `structural-patterns` — Decorator/Adapter for wrap-and-extend refactorings.
+- `refactoring-discipline` — *how* to apply these refactorings safely (this skill is the *what*).
+- `naming-and-comments` — extracted helpers and renamed types need names that survive the next reader.

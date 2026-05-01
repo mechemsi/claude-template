@@ -221,3 +221,5 @@ OpenAPI / JSON Schema is non-negotiable for any API consumed by code you don't c
 - `error-handling` — domain errors map to HTTP status + envelope at the boundary.
 - `12-factor-app` — config (URLs, secrets) via env vars; no hardcoded endpoints.
 - `.claude/rules/api-conventions.md` — project-specific envelope, validation, and pagination defaults.
+- `concurrency-and-idempotency` — POST endpoints that can be retried need an idempotency-key contract; GET/PUT/DELETE semantics are idempotent by spec.
+- `caching-strategies` — `Cache-Control`, `ETag`, `Vary` are the API-level cache contract; design them with the endpoint, not after.

@@ -186,3 +186,5 @@ When a downstream service is failing, don't keep hammering it. After N failures 
 - `solid-principles` — DIP makes error injection (and testing) easier.
 - `api-design` — error envelope conventions, HTTP status semantics.
 - `logging-observability` — structured logs with correlation IDs.
+- `concurrency-and-idempotency` — retry policy belongs here; idempotency is what makes retry safe.
+- `caching-strategies` — cache *miss* is normal; cache *failure* (Redis unreachable) needs an explicit fallback policy at this layer.

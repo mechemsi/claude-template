@@ -122,3 +122,5 @@ class OrderService {
 - `code-quality-heuristics` — when a SOLID refactor would violate YAGNI.
 - `code-smells` — concrete refactorings that resolve SOLID violations.
 - `creational-patterns`, `structural-patterns`, `behavioral-patterns` — patterns that operationalize OCP and DIP.
+- `layered-architecture` — DIP applied across controller/service/repository boundaries.
+- `naming-and-comments` — `Manager`/`Helper`/`Util` suffixes signal SRP violations; rename as part of the refactor.

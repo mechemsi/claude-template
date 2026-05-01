@@ -148,6 +148,9 @@ Skills are user-level, not per-project. They auto-trigger across every project o
 | `structural-patterns` | Adapter, Bridge, Composite, Decorator, Facade, Flyweight, Proxy |
 | `behavioral-patterns` | Chain of Responsibility, Command, Iterator, Mediator, Memento, Observer, State, Strategy, Template Method, Visitor |
 | `code-smells` | Long Method, Feature Envy, Switch Statements, etc. → refactoring techniques |
+| `refactoring-discipline` | Tests-green-between-steps; characterization tests; parallel change; branch by abstraction; strangler fig; Mikado method |
+| `naming-and-comments` | Identifiers reveal intent; boolean prefix conventions; comments explain *why*; owned/dated TODOs; no `utils`/`helpers` files |
+| `layered-architecture` | Controllers/commands → services/handlers → repositories; transaction boundaries; CQRS handlers |
 
 **System / cross-cutting skills:**
 
@@ -159,6 +162,11 @@ Skills are user-level, not per-project. They auto-trigger across every project o
 | `api-design` | REST modeling, idempotency, versioning, pagination, error envelopes |
 | `12-factor-app` | Config, processes, port binding, disposability, dev/prod parity |
 | `ci-cd-pipeline` | Six gate categories (security, correctness, scale, release, AI-specific, agent governance) + adoption order |
+| `db-migration-safety` | ORM-agnostic schema migration rules — expand/contract, backfills, locks, deploy ordering, per-ORM cookbook |
+| `concurrency-and-idempotency` | At-least-once + idempotent receivers, idempotency keys, unique-constraint dedup, optimistic/pessimistic locking, fencing tokens, outbox/saga, cron leases |
+| `caching-strategies` | Cache patterns (cache-aside / read-through / write-*); stampede / hot-key mitigations; key versioning; TTL/eviction; HTTP cache headers |
+| `feature-flags-and-rollout` | Toggle taxonomy (release/experiment/ops/permission); ramp sequence; rollback by flag flip; flag debt; flag-vs-schema separation |
+| `code-review-discipline` | PR sizing; one-PR-one-purpose; review priority order; reviewer/author hygiene; reviewing AI code; CODEOWNERS for high-risk paths |
 
 **Process skills:**
 
@@ -302,12 +310,20 @@ Skills live at `~/.claude/skills/` (symlinked from this repo's `skills/`) and tr
 | **structural-patterns** | Composing or wrapping objects | Adapter, Bridge, Composite, Decorator, Facade, Flyweight, Proxy |
 | **behavioral-patterns** | Designing object interactions or state machines | Chain of Responsibility, Command, Iterator, Mediator, Memento, Observer, State, Strategy, Template Method, Visitor |
 | **code-smells** | Reviewing or refactoring existing code | Long Method, Feature Envy, etc. → refactoring techniques |
+| **refactoring-discipline** | Refactor or restructure without behavior change; rename across codebase; replace legacy subsystem | Tests-green-between-steps, characterization tests, parallel change, branch by abstraction, strangler fig, Mikado method, refactor-vs-rewrite |
+| **naming-and-comments** | Naming a new identifier or file; deciding whether a comment is needed; reviewing names that obscure intent | Boolean prefix table, noise-word suffixes (`Manager`/`Helper`/`Util`), comment-decision matrix, owned/dated TODOs, anti-named files (`utils`/`helpers`/`misc`) |
+| **layered-architecture** | A controller/route imports a repo or ORM client; deciding where business logic lives | Controllers→services→repositories rule, transaction-boundary placement, CQRS handlers, testing per layer |
 | **error-handling** | Writing try/catch, async functions, or error types | Result vs exceptions, retry/backoff, never-swallow, boundary translation |
 | **logging-observability** | Adding logs, debugging prod, designing metrics | Structured logs, trace/correlation IDs, RED/USE metrics, redaction |
 | **testing-architecture** | Deciding test level, what to mock, fixing flaky tests | Test pyramid, hexagonal testing, mock-the-boundary heuristic |
 | **api-design** | Designing or reviewing HTTP endpoints | REST modeling, idempotency, versioning, pagination, error envelopes |
 | **12-factor-app** | Configuring a service for production | Config in env, stateless processes, disposability, dev/prod parity |
 | **ci-cd-pipeline** | Designing or auditing CI/CD; picking gates for AI-coded apps | Six gate categories, adoption order, tools (gitleaks, semgrep, trivy, osv-scanner, etc.) |
+| **db-migration-safety** | Writing/reviewing schema migrations against a non-empty DB; auto-generated ORM diffs about to ship | Expand-contract pattern, dangerous-op rewrites, locking/timeouts, batched backfills, code/schema deploy ordering, per-ORM cookbook |
+| **concurrency-and-idempotency** | Webhook/queue retries; concurrent uniqueness checks; cron on multiple instances; designing idempotency keys; check-then-act races | At-least-once + idempotent receivers, idempotency-key tables, unique constraints, optimistic/pessimistic locking, fencing tokens, outbox/saga, DB-backed leases |
+| **caching-strategies** | Adding a cache layer; designing TTLs/invalidation; stampede/hot-key risk; stale-data-after-write; choosing a cache pattern | Pattern matrix (cache-aside / read-through / write-* / refresh-ahead), failure-mode → mitigation matrix, key versioning, HTTP cache headers, multi-tier caches |
+| **feature-flags-and-rollout** | Putting a feature behind a flag; canary/blue-green/dark-launch; kill switch; old flag past launch date; flag debt | Toggle taxonomy (release/experiment/ops/permission), stable hash-on-actor evaluation, ramp sequence, audit log shape, telemetry tagging, schema-vs-flag separation |
+| **code-review-discipline** | Opening or reviewing a PR; PR over ~400 LOC; refactor mixed with feature; reviewing AI-generated code | PR sizing matrix, review priority order (correctness > security > tests > docs > style), reviewer/author hygiene, AI-code red flags, CODEOWNERS for high-risk paths |
 | **writing-prd** | Starting a new user-facing feature | Guides PRD writing into `claudedocs/prds/` before a plan |
 | **bootstrap-claude-template** | Setting up a new project | Copies the template structure into a target directory |
 | **install-claudet-rules** | Syncing rules into an existing project | Diff-aware install/update of `.claude/rules/*.md` from claudet |

@@ -175,3 +175,5 @@ These are three different types in three different modules. Don't unify them int
 - `solid-principles` — entities and aggregates are SRP applied to domain; repositories are DIP.
 - `code-smells` — Primitive Obsession, Feature Envy, Data Clumps all signal a missing VO/entity.
 - `error-handling` — domain errors live with domain code, raised by entity methods.
+- `layered-architecture` — where repositories sit and how controllers/services use aggregates.
+- `naming-and-comments` — branded IDs and value objects only work if their names match domain concepts; this skill is how to pick them.

@@ -106,3 +106,5 @@ About to add abstraction / extract / generalize?
 
 - `solid-principles` — SRP often resolves real DRY violations.
 - `code-smells` — Long Method, Shotgun Surgery, Divergent Change are the symptoms these heuristics prevent.
+- `refactoring-discipline` — once you've decided a refactor is justified, this is the *how*.
+- `naming-and-comments` — most "premature abstraction" smells are actually naming smells in disguise.

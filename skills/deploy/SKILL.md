@@ -25,6 +25,7 @@ npx prisma migrate status
 - If migrations are pending: list them and confirm with the developer before running
 - If schema changed but no migration exists: warn loudly — this can break production
 - Never run `prisma migrate deploy` without explicit developer confirmation
+- For each pending migration, invoke the `db-migration-safety` skill to review the SQL for `DROP`, `RENAME`, `NOT NULL`, foreign keys, or large indexes against populated tables — these need expand-contract, not a single-step deploy
 
 ### Phase 3 — Environment Variables Audit
 - Diff `.env.example` against the last deploy tag to find newly added vars
