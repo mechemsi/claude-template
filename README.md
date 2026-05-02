@@ -472,6 +472,63 @@ How it structures its response.
 
 ---
 
+## CI/CD — Known Gaps
+
+The reusable workflow at [`.github/workflows/_ci.yml`](.github/workflows/_ci.yml) covers PR guards, secret scanning, dependency review, lint, typecheck, SAST, SCA, dead-code, unit + integration tests, coverage gate, and build. The following gates from [`skills/ci-cd-pipeline/SKILL.md`](skills/ci-cd-pipeline/SKILL.md) are documented but **not yet implemented**, and should land before this template is used in production.
+
+### Pinning & supply chain
+
+| Gap | Why it matters | Fix |
+|---|---|---|
+| Actions referenced by `@v4` tag | Tag can be force-moved by an attacker who compromises the action repo | Replace every `uses:` tag with a full commit SHA; add `renovate.json` with `extends: ["helpers:pinGitHubActionDigests"]` |
+| Container images use floating tags (`postgres:16-alpine`, `returntocorp/semgrep`) | Same supply-chain risk for service / job containers | Pin by `@sha256:` digest; let Renovate update |
+| No `renovate.json` committed | Pinned SHAs/digests rot fast without automation | Add Renovate config and enable the bot |
+
+### Missing canonical jobs
+
+| Job | Purpose | Notes |
+|---|---|---|
+| `migrate-check` | Prisma `migrate diff` + up/down dry-run against a throwaway Postgres | Required by `db-migration-safety` skill — currently no gate against unsafe schema changes |
+| `schema-diff` | Breaking-change diff for OpenAPI / GraphQL / protobuf | `oasdiff`, `buf breaking`, or equivalent |
+| `docker-build-scan` | `buildx` build + `trivy image` scan of the produced image | Belongs on PR for image-producing services |
+| `iac-scan` | `checkov` + `tfsec` for any Terraform / k8s manifests | Skip until IaC is added to the repo |
+| `e2e` | Playwright E2E job | `CLAUDE.md` lists Playwright in the stack; no CI job exists yet |
+
+### Release / CD (no `_release.yml` exists)
+
+| Gap | Why it matters |
+|---|---|
+| No SBOM generation on release | Required for downstream vuln tracking; `syft` + `cyclonedx` are the usual choice |
+| No build provenance / artifact signing | `cosign` + SLSA provenance; needed before any artifact is consumed by another team |
+| No deploy pipeline at all | Template ships CI but not CD — no environment promotion, no migration-vs-code ordering enforcement |
+
+### AI-specific gates (skill section "AI-specific")
+
+None of these exist yet; add when the project actually hosts an AI feature:
+
+- `ai-eval` — regression eval set against a frozen prompt/model pair
+- `ai-cost-budget` — fail when token cost per request exceeds budget
+- `prompt-injection-lint` — static checks on prompt templates
+- `tool-call-schema` — schema-validate every tool the agent can call
+
+### Operational
+
+| Gap | Fix |
+|---|---|
+| No scheduled audit workflow | Add `_audits.yml` running nightly: `osv-scanner`, `npm audit`, `gitleaks` against full history; **opens issues, never fails a build** |
+| No coverage trend / Codecov enforcement beyond floor | Optional — only matters once `CODECOV_TOKEN` is wired |
+| No CODEOWNERS for high-risk paths | `code-review-discipline` skill calls this out; add `CODEOWNERS` covering `prisma/`, `.github/workflows/`, auth code |
+| No required-status-check list automation | The set in [`.github/CI-CD.md`](.github/CI-CD.md#branch-protection-required-status-checks) must be applied manually per repo today |
+
+### Caller-side gaps
+
+| Gap | Fix |
+|---|---|
+| `ci-example-caller.yml.example` uses `@<sha>` placeholder | Real callers must replace with a tagged release SHA of this repo; document a release-tagging cadence |
+| No reusable-workflow versioning policy | Decide between consumers tracking `@main` (fast, risky) vs pinned releases (safe, slow); document the choice |
+
+---
+
 ## License
 
 MIT
