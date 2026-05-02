@@ -176,6 +176,7 @@ Skills are user-level, not per-project. They auto-trigger across every project o
 | `writing-prd` | Write a PRD before a plan when starting a new feature |
 | `bootstrap-claude-template` | Scaffold a new project from this template repo |
 | `install-claudet-rules` | Install or update claudet rules in an existing project (diff-aware) |
+| `parallel-agent-worktrees` | Convention + lifecycle for `.worktrees/<slug>/` so multiple agents can work the same repo in parallel without colliding |
 
 ### `.claude/agents/` — Subagent Personas
 
@@ -329,6 +330,7 @@ Skills live at `~/.claude/skills/` (symlinked from this repo's `skills/`) and tr
 | **writing-prd** | Starting a new user-facing feature | Guides PRD writing into `claudedocs/prds/` before a plan |
 | **bootstrap-claude-template** | Setting up a new project | Copies the template structure into a target directory |
 | **install-claudet-rules** | Syncing rules into an existing project | Diff-aware install/update of `.claude/rules/*.md` from claudet |
+| **parallel-agent-worktrees** | Dispatching a long-running agent; running 2+ agents in parallel; reviewing a PR without losing current state; risky edits that may be discarded | `.worktrees/<slug>/` convention; gitignored; per-worktree env/DB/port gotchas; create/list/remove/prune lifecycle |
 
 ### Agents — Isolated Subagents
 

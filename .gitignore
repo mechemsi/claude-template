@@ -26,3 +26,6 @@ node_modules/
 dist/
 build/
 coverage/
+
+# Git worktrees — see skills/parallel-agent-worktrees/SKILL.md
+.worktrees/
