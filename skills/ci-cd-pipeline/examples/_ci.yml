@@ -1,0 +1,217 @@
+# Reusable CI workflow — canonical job names from SKILL.md §"Canonical jobs".
+#
+# Consume from a downstream repo via:
+#   uses: <org>/<template-repo>/.github/workflows/_ci.yml@<sha>
+#
+# All language/framework-specific commands are passed as `workflow_call` inputs.
+# The same file works for Node, Python, Go, Rust, etc. — change the inputs,
+# the job names stay identical so branch-protection rules are interchangeable.
+#
+# Replace every `<sha>` with a 40-char commit SHA before use (SKILL.md §1).
+
+name: _ci
+
+on:
+  workflow_call:
+    inputs:
+      lint-cmd:
+        description: "Format + lint command (e.g. 'npm run lint', 'ruff check .', 'golangci-lint run ./...')"
+        required: true
+        type: string
+      typecheck-cmd:
+        description: "Strict typecheck (e.g. 'tsc --noEmit --strict', 'mypy --strict src/', 'go vet ./...')"
+        required: true
+        type: string
+      test-unit-cmd:
+        description: "Unit test command — must produce the coverage report at `coverage-report` path"
+        required: true
+        type: string
+      test-integration-cmd:
+        description: "Integration test command. Empty string disables the job."
+        required: false
+        type: string
+        default: ""
+      build-cmd:
+        description: "Production build command"
+        required: true
+        type: string
+      coverage-report:
+        description: "Path to Cobertura/LCOV report produced by test-unit"
+        required: true
+        type: string
+      coverage-floor:
+        description: "Diff-coverage floor (whole-repo floor should be ratcheted from current, not set higher — SKILL.md §2)"
+        type: number
+        default: 80
+      pr-size-limit:
+        description: "Hard cap on lines added in a PR (SKILL.md §2 'PR guards')"
+        type: number
+        default: 400
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  # 1. PR guards — fast, fail-first. Cheap checks the agent likes to skirt.
+  pr-guards:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@<sha>
+        with:
+          fetch-depth: 0
+
+      - name: PR size
+        run: |
+          added=$(git diff --shortstat "origin/${{ github.base_ref }}...HEAD" | awk '{print $4}')
+          if [ "${added:-0}" -gt "${{ inputs.pr-size-limit }}" ]; then
+            echo "::error::PR adds ${added} lines, limit is ${{ inputs.pr-size-limit }}"
+            exit 1
+          fi
+
+      - name: Conventional Commits title
+        run: |
+          title='${{ github.event.pull_request.title }}'
+          echo "$title" | grep -Eq '^(feat|fix|chore|docs|refactor|test|perf|build|ci|revert)(\([^)]+\))?!?: .+' || {
+            echo "::error::PR title must be Conventional Commits format"; exit 1; }
+
+      - name: No skipped or focused tests
+        run: |
+          if git diff "origin/${{ github.base_ref }}...HEAD" -- ':!*.md' \
+            | grep -E '^\+.*(@skip|\.skip\(|\.only\(|xit\(|fit\()'; then
+            echo "::error::Skipped or focused test added — see SKILL.md §2 'Test-skip detector'"
+            exit 1
+          fi
+
+      - name: No TODO/FIXME placeholders in code
+        run: |
+          if git diff "origin/${{ github.base_ref }}...HEAD" -- ':!*.md' ':!docs/' \
+            | grep -E '^\+.*(TODO|FIXME|XXX|left as exercise)'; then
+            echo "::error::Placeholder added — see SKILL.md §2 'Artefact hygiene'"
+            exit 1
+          fi
+
+  # 2. Secret scan — independent runner, never `needs:` anything (SKILL.md "Canonical jobs").
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@<sha>
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 3. Format + lint blocking. One job; format and lint inside.
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - name: Lint
+        run: ${{ inputs.lint-cmd }}
+
+  # 4. Strict typing. Separate from lint — fails fast and reruns independently.
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - name: Typecheck
+        run: ${{ inputs.typecheck-cmd }}
+
+  # 5. Unit tests + emit coverage. Matrix on runtime versions in your wrapper if needed.
+  test-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - name: Run unit tests
+        run: ${{ inputs.test-unit-cmd }}
+      - uses: actions/upload-artifact@<sha>
+        with:
+          name: coverage
+          path: ${{ inputs.coverage-report }}
+          if-no-files-found: error
+
+  # 6. Integration tests — bring up DB / queue services in your wrapper.
+  # Reusable workflows can't easily extend `services:` — override the job in the wrapper
+  # if you need fixtures more elaborate than what test-integration-cmd handles.
+  test-integration:
+    runs-on: ubuntu-latest
+    if: inputs.test-integration-cmd != ''
+    steps:
+      - uses: actions/checkout@<sha>
+      - name: Run integration tests
+        run: ${{ inputs.test-integration-cmd }}
+
+  # 7. Coverage gate — diff-cover ≥ floor. Whole-repo floor stays at current ratcheted level.
+  coverage-gate:
+    runs-on: ubuntu-latest
+    needs: [test-unit]
+    steps:
+      - uses: actions/checkout@<sha>
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@<sha>
+        with:
+          name: coverage
+      - uses: actions/setup-python@<sha>
+        with:
+          python-version: "3.x"
+      - name: Install diff-cover
+        run: pip install diff-cover
+      - name: Diff coverage gate
+        run: |
+          diff-cover "${{ inputs.coverage-report }}" \
+            --compare-branch="origin/${{ github.base_ref }}" \
+            --fail-under=${{ inputs.coverage-floor }}
+
+  # 8. SAST — semgrep auto-detects language; the rulesets cover ~30.
+  sast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - uses: semgrep/semgrep-action@<sha>
+        with:
+          config: "p/ci p/security-audit p/secrets"
+
+  # 9. SCA — osv-scanner reads npm/pip/cargo/go.mod/gem/composer/gradle/maven lockfiles.
+  sca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - uses: google/osv-scanner-action@<sha>
+        with:
+          scan-args: |-
+            --recursive
+            ./
+
+  # 10. Dependency Review — diff of newly-added deps + their licences and CVEs.
+  dep-review:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@<sha>
+      - uses: actions/dependency-review-action@<sha>
+        with:
+          fail-on-severity: high
+
+  # 11. Dead-code / unused-deps. Genuinely language-specific — override in your wrapper
+  # with `knip` (TS), `ts-prune` (TS), `vulture` (Py), `depcheck` (JS), `cargo-machete` (Rust).
+  # Left as a stub so the canonical job name still exists for branch protection.
+  dead-code:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - name: Dead-code stub
+        run: |
+          echo "::warning::dead-code job is a stub — override in your wrapper workflow."
+          echo "See SKILL.md §2 'Dead-code / unused-dep' for tool selection."
+
+  # 12. Build — only after lint and typecheck pass, since both produce hallucinated-API errors faster than build.
+  build:
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck]
+    steps:
+      - uses: actions/checkout@<sha>
+      - name: Build
+        run: ${{ inputs.build-cmd }}

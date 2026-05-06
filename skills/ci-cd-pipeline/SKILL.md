@@ -279,7 +279,7 @@ smoke-postdeploy
 - **Never rename a job without auditing branch protection.** Required-status-check names are referenced by the GitHub API; a rename either silently skips the check or blocks every merge until the rule is updated.
 - **Reusable workflow ships these names verbatim.** A repo consuming `_ci.yml` should not need to remap.
 
-A reference reusable implementation lives in this template at `.github/workflows/_ci.yml` — downstream repos call it with `uses: mechemsi/claude-template/.github/workflows/_ci.yml@<sha>`.
+A reference reusable implementation lives in this template at `.github/workflows/_ci.yml` — downstream repos call it with `uses: mechemsi/claude-template/.github/workflows/_ci.yml@<sha>`. Language-neutral worked examples for these jobs are in [`./examples/`](./examples/README.md) — a parameterised `_ci.yml` plus standalone secret-scan, scheduled-audit, and PR-template patterns. Same canonical job names, swappable per ecosystem via `workflow_call` inputs.
 
 ## Auditing an existing pipeline
 
