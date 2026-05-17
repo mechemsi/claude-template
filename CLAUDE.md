@@ -19,6 +19,7 @@ This is the shared team instructions file. It is committed to git and applies to
 - Follow documentation conventions in `.claude/rules/documentation.md`
 - Keep files small and modules well-bounded per `.claude/rules/file-and-module-structure.md`
 - Manage dependencies per `.claude/rules/dependency-management.md`
+- Keep persistent project memory per `.claude/rules/project-memory.md`
 
 ## Git Conventions
 - Follow commit and branching rules in `.claude/rules/git-commits.md`
@@ -70,6 +71,8 @@ This template ships scaffolding for the full Claude Code surface so a fresh proj
   agents/                  # subagents with isolated context windows
   skills/                  # project-local skills (see "Skills" above)
   rules/                   # path-scoped style/convention rules
+  memory/                  # persistent project memory — committed, synced via git
+  link-memory.sh           # run once per device to wire memory/ to Claude's per-project path
   output-styles/           # custom response formats (e.g. terse)
   plugins/                 # bundled commands+agents+skills+MCP under one namespace
   statusline.sh            # bottom-bar display script
@@ -99,6 +102,21 @@ Claude must keep `claudedocs/` up to date as part of the development process:
 - Never leave INDEX.md out of sync — update it whenever a doc is added or changes status
 - Use YAML frontmatter in every doc (`title`, `status`, `date`, `related`)
 - Link between related docs using relative paths
+
+## Project Memory
+
+Persistent project memory (small Markdown facts Claude recalls across sessions)
+is committed to this repo at `.claude/memory/` so it syncs across devices via
+git — instead of being trapped in the per-machine `~/.claude/` path.
+
+- **New device:** after cloning, run `sh .claude/link-memory.sh` once. It
+  symlinks Claude Code's per-project memory path to `.claude/memory/`.
+- Memory files are committed and pushed like any other file — **never put
+  secrets in them.**
+- `.claude/memory/MEMORY.md` is the index, loaded every session. Each memory is
+  a sibling `.md` file with YAML frontmatter (`name`, `description`,
+  `metadata.type`, where `type` ∈ `user | feedback | project | reference`).
+- Full convention: `.claude/rules/project-memory.md`.
 
 ## Important Notes
 - Always run `npm run typecheck` before finishing a task

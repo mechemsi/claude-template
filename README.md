@@ -105,6 +105,8 @@ your-project/
 |------|:-:|-------------|
 | `settings.json` | :blue_circle: | Permissions + environment config — shared team settings |
 | `settings.local.json` | :white_circle: | Personal permissions — gitignored local overrides |
+| `link-memory.sh` | :blue_circle: | Run once per device — symlinks Claude's memory path to `.claude/memory/` |
+| `memory/` | :blue_circle: | Persistent project memory — committed so it syncs across devices |
 
 ### `.claude/commands/` — Custom Slash Commands
 
@@ -125,6 +127,7 @@ your-project/
 | `testing.md` | :blue_circle: | Defines how tests should be written and organized |
 | `api-conventions.md` | :blue_circle: | Project-specific REST envelope and validation defaults |
 | `documentation.md` | :blue_circle: | Defines how `claudedocs/` is structured and maintained |
+| `project-memory.md` | :blue_circle: | In-repo Claude memory at `.claude/memory/` so it syncs across devices |
 
 ### Skills — installed globally at `~/.claude/skills/`
 
@@ -296,6 +299,34 @@ Structured documentation that helps Claude (and your team) navigate the project:
 - Plans and implementations: `YYYY-MM-DD-short-name.md`
 - Decisions: `NNN-short-name.md` (sequential numbering)
 - Runbooks: `short-name.md`
+
+### Project Memory — Synced Across Devices
+
+Claude Code keeps per-project **memory** — small Markdown files holding facts it
+recalls across sessions. By default that memory lives in a per-machine path
+under `~/.claude/`, so it is lost when you switch machines.
+
+This template keeps memory **inside the repo** at `.claude/memory/`, committed
+to git. Claude Code's per-project memory path is a symlink pointing back at it,
+so `git pull` syncs memory across every device.
+
+**New device setup** — after cloning, run once:
+
+```bash
+sh .claude/link-memory.sh
+```
+
+The script is idempotent. If Claude Code already created a real memory directory
+on this machine, the script folds those memories into `.claude/memory/` before
+replacing the directory with the symlink — nothing is lost.
+
+**Memory file format:** `.claude/memory/MEMORY.md` is the index — one line per
+memory (`- [Title](file.md) — hook`), loaded into context each session. Each
+memory is a sibling `.md` file with YAML frontmatter (`name`, `description`,
+`metadata.type`, where `type` is `user | feedback | project | reference`).
+
+Memory files are committed and pushed like any other file — **never put secrets
+in them.** See `.claude/rules/project-memory.md` for the full convention.
 
 ### Skills — Auto-Invoked Workflows (global)
 
