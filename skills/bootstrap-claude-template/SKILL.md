@@ -84,8 +84,6 @@ $SRC/  (claudet repo root, located via symlink resolution above)
 │   ├── agents/          → copy
 │   ├── commands/        → copy
 │   ├── rules/           → copy
-│   ├── memory/          → copy (MEMORY.md index only — reset to empty)
-│   ├── link-memory.sh   → copy
 │   ├── settings.json    → copy
 │   └── settings.local.json   (skip — gitignored, user-specific)
 └── claudedocs/
@@ -114,21 +112,11 @@ SRC=$(dirname "$(dirname "$(dirname "$SKILL_REAL")")")
 
 mkdir -p "$TARGET/.claude" "$TARGET/claudedocs"
 
-cp -r "$SRC/.claude/agents"         "$TARGET/.claude/"
-cp -r "$SRC/.claude/commands"       "$TARGET/.claude/"
-cp -r "$SRC/.claude/rules"          "$TARGET/.claude/"
-cp    "$SRC/.claude/settings.json"  "$TARGET/.claude/"
-cp    "$SRC/.claude/link-memory.sh" "$TARGET/.claude/"
-chmod +x "$TARGET/.claude/link-memory.sh"
-
-# Project memory: copy the starter MEMORY.md index only — it ships empty.
-mkdir -p "$TARGET/.claude/memory"
-cp "$SRC/.claude/memory/MEMORY.md" "$TARGET/.claude/memory/MEMORY.md"
+cp -r "$SRC/.claude/agents"        "$TARGET/.claude/"
+cp -r "$SRC/.claude/commands"      "$TARGET/.claude/"
+cp -r "$SRC/.claude/rules"         "$TARGET/.claude/"
+cp    "$SRC/.claude/settings.json" "$TARGET/.claude/"
 ```
-
-The source `MEMORY.md` is already an empty starter index — copy it as-is. Tell
-the user to run `sh .claude/link-memory.sh` once after the project's git repo
-exists, so Claude Code's per-project memory path is symlinked to `.claude/memory/`.
 
 ### 3. Copy CLAUDE.md (and customize)
 
@@ -172,7 +160,6 @@ Confirm:
 - `claudedocs/` has 5 subdirectories and `INDEX.md`.
 - `INDEX.md` has empty tables, not the source template's sample rows.
 - `prds/_template.md` is present.
-- `.claude/memory/MEMORY.md` is present and `.claude/link-memory.sh` is executable.
 
 ### 7. Note about global skills
 

@@ -1,6 +1,6 @@
 ---
 name: install-claudet-rules
-description: Use when the user wants to install or update the claudet rule library (`code-style`, `naming-and-comments`, `file-and-module-structure`, `dependency-management`, `testing`, `api-conventions`, `documentation`, `project-memory`) into the current project's `.claude/rules/`; when the user says "sync rules from claudet", "install standard rules here", "update rules in this project", or asks why their rules look outdated compared to claudet's.
+description: Use when the user wants to install or update the claudet rule library (`code-style`, `naming-and-comments`, `file-and-module-structure`, `dependency-management`, `testing`, `api-conventions`, `documentation`) into the current project's `.claude/rules/`; when the user says "sync rules from claudet", "install standard rules here", "update rules in this project", or asks why their rules look outdated compared to claudet's.
 ---
 
 # Install / Update claudet rules in a project
