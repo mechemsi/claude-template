@@ -1,10 +1,10 @@
-# Claude Project Template
+# Claude/Codex Project Template
 
-A batteries-included template for structuring Claude Code projects with commands, rules, subagents, and a documentation workflow.
+A batteries-included template for structuring Claude Code and Codex projects with shared rules, skills, agents, and a documentation workflow.
 
-Use this as a starting point for any team that wants a consistent, well-organized Claude Code setup from day one.
+Use this as a starting point for any team that wants a consistent, well-organized AI coding-agent setup from day one.
 
-> **Skills note.** Architecture and process skills (SOLID, design patterns, code smells, DRY/KISS/YAGNI, PRD writing, deploy, security review) are version-controlled here under [`skills/`](skills/). `make install` symlinks them into `~/.claude/skills/` so they auto-trigger across every project on the machine. `git pull` then keeps them up to date. The repo also ships `bootstrap-claude-template` as one of those skills — it scaffolds new projects from this repo. See [Quick Start](#quick-start).
+> **Skills note.** Architecture and process skills (SOLID, design patterns, code smells, DRY/KISS/YAGNI, PRD writing, deploy, security review, agent config sync) are version-controlled here under [`skills/`](skills/). `make install` symlinks them into both `~/.claude/skills/` and `~/.agents/skills/` so they auto-trigger across every project on the machine for Claude and Codex. `git pull` then keeps them up to date. The repo also ships `bootstrap-claude-template` and `agent-config-sync` as skills. See [Quick Start](#quick-start).
 
 ---
 
@@ -17,7 +17,8 @@ Use this as a starting point for any team that wants a consistent, well-organize
 | **Agents** | Isolated subagent personas for focused, specialized work |
 | **Settings** | Permission model controlling what Claude can and cannot do |
 | **Docs** | Structured project documentation — PRDs, plans, implementations, decisions, runbooks |
-| **Skills** *(global)* | Architecture, refactoring, and PRD-writing skills installed at `~/.claude/skills/` — apply to all projects |
+| **Codex adapters** | `AGENTS.md`, `.codex/config.toml`, `.codex/agents/`, and `.agents/skills/` equivalents |
+| **Skills** *(global)* | Architecture, refactoring, and PRD-writing skills installed at `~/.claude/skills/` and `~/.agents/skills/` — apply to all projects |
 
 ---
 
@@ -28,19 +29,34 @@ Use this as a starting point for any team that wants a consistent, well-organize
 ```bash
 git clone git@github.com:mechemsi/claude-template.git ~/pr/claudet
 cd ~/pr/claudet
-make install         # symlinks ./skills/* into ~/.claude/skills/
+make install         # symlinks ./skills/* into ~/.claude/skills/ and ~/.agents/skills/
 ```
 
-`git pull` thereafter automatically updates the globally-available skills (because they're symlinks, not copies). Other targets:
+`make install` symlinks `./skills/*` into both Claude's `~/.claude/skills/` and Codex's `~/.agents/skills/`. `git pull` thereafter automatically updates the globally-available skills (because they're symlinks, not copies). Other targets:
 
 | Command | What it does |
 |---------|-------------|
-| `make install` | Symlink `./skills/*` into `~/.claude/skills/` (recommended) |
+| `make install` | Symlink `./skills/*` into `~/.claude/skills/` and `~/.agents/skills/` (recommended) |
+| `make install-claude` | Install skills for Claude only |
+| `make install-codex` | Install skills for Codex only |
 | `make install-copy` | Copy instead of symlink — needs re-running after `git pull` |
-| `make uninstall` | Remove symlinks in `~/.claude/skills/` that point at this repo |
+| `make uninstall` | Remove symlinks in both global skill dirs that point at this repo |
 | `make list` | Show installed skills and where each one points |
 | `make doctor` | Diagnose missing or broken installs |
+| `make sync-agents` | Regenerate Claude/Codex adapter files inside this template repo |
 | `make help` | Show all targets |
+
+### Syncing Claude and Codex adapters
+
+Use the `agent-config-sync` skill or run its script directly:
+
+```bash
+python3 ~/pr/claudet/skills/agent-config-sync/scripts/agent_config_sync.py --target . --check
+python3 ~/pr/claudet/skills/agent-config-sync/scripts/agent_config_sync.py --target . --direction claude-to-codex
+python3 ~/pr/claudet/skills/agent-config-sync/scripts/agent_config_sync.py --target . --direction both --force
+```
+
+It intentionally syncs portable surfaces only: instructions, custom agents, commands-as-Codex-skills, project-local skills, and MCP server definitions. Hook payloads and permission policies are left for manual review because Claude and Codex do not use identical schemas there.
 
 ### Scaffolding a new project — use the `bootstrap-claude-template` skill
 
@@ -84,8 +100,9 @@ your-project/
 | File | | Description |
 |------|:-:|-------------|
 | `CLAUDE.md` | :blue_circle: | Team instructions — committed to git, shared with all developers |
+| `AGENTS.md` | :blue_circle: | Codex instructions — generated/synced from the same team baseline |
 | `CLAUDE.local.md` | :white_circle: | Personal overrides — gitignored, your local preferences |
-| `Makefile` | :blue_circle: | `make install` symlinks `./skills/*` into `~/.claude/skills/` |
+| `Makefile` | :blue_circle: | `make install` symlinks `./skills/*` into Claude and Codex global skill dirs |
 | `skills/` | :blue_circle: | Canonical, version-controlled skill sources (installed globally via `make install`) |
 
 ### `claudedocs/` — Project Documentation
@@ -105,6 +122,14 @@ your-project/
 |------|:-:|-------------|
 | `settings.json` | :blue_circle: | Permissions + environment config — shared team settings |
 | `settings.local.json` | :white_circle: | Personal permissions — gitignored local overrides |
+
+### `.codex/` and `.agents/` — Codex Configuration
+
+| File | | Description |
+|------|:-:|-------------|
+| `.codex/config.toml` | :blue_circle: | Codex project adapter config; includes instruction fallback and agent defaults |
+| `.codex/agents/*.toml` | :blue_circle: | Codex custom agents converted from `.claude/agents/*.md` |
+| `.agents/skills/` | :blue_circle: | Project-local Codex skills; generated command skills can live here |
 
 ### `.claude/commands/` — Custom Slash Commands
 
@@ -177,6 +202,7 @@ Skills are user-level, not per-project. They auto-trigger across every project o
 | `bootstrap-claude-template` | Scaffold a new project from this template repo |
 | `install-claudet-rules` | Install or update claudet rules in an existing project (diff-aware) |
 | `parallel-agent-worktrees` | Convention + lifecycle for `.worktrees/<slug>/` so multiple agents can work the same repo in parallel without colliding |
+| `agent-config-sync` | Audits and converts Claude/Codex instructions, agents, MCP, commands, and project-local skills |
 
 ### `.claude/agents/` — Subagent Personas
 
@@ -299,7 +325,7 @@ Structured documentation that helps Claude (and your team) navigate the project:
 
 ### Skills — Auto-Invoked Workflows (global)
 
-Skills live at `~/.claude/skills/` (symlinked from this repo's `skills/`) and trigger automatically across every project — no slash command needed. The repo is the single source of truth; `git pull` keeps installed skills up to date.
+Skills live at `~/.claude/skills/` for Claude and `~/.agents/skills/` for Codex (symlinked from this repo's `skills/`) and trigger automatically across every project — no slash command needed. The repo is the single source of truth; `git pull` keeps installed skills up to date.
 
 | Skill | Triggers when | What it does |
 |-------|--------------|-------------|
@@ -394,10 +420,10 @@ Create a markdown file in `.claude/commands/`:
 
 ### Add a new skill
 
-New skills are created at user-global `~/.claude/skills/`, not inside the project. This keeps a single source of truth across every project on the machine.
+New shared skills are created in this repo's root `skills/`, not inside a generated project. This keeps a single source of truth across every project on the machine.
 
 ```
-~/.claude/skills/your-skill/
+skills/your-skill/
   SKILL.md    # Workflow definition with triggers
 ```
 

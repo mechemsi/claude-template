@@ -2,6 +2,11 @@
 .claude/settings.local.json
 CLAUDE.local.md
 
+# Personal Codex settings and runtime state — per-developer, never committed
+.codex/settings.local.toml
+.codex/state/
+.codex/.tool-log
+
 # Claude Code runtime artifacts — written by hooks during a session
 .claude/.tool-log
 .claude/state/

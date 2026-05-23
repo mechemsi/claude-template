@@ -1,11 +1,11 @@
 ---
 name: bootstrap-claude-template
-description: Use when starting a new project from scratch and wanting Claude Code conventions; when the user says "scaffold from the template", "use claudet", "set up a new project", "init claude config in this repo", or asks to copy rules/agents/commands/claudedocs structure from the claudet template repo.
+description: Use when starting a new project from scratch and wanting Claude Code or Codex conventions; when the user says "scaffold from the template", "use claudet", "set up a new project", "init claude config in this repo", "init codex config in this repo", or asks to copy rules/agents/commands/claudedocs structure from the claudet template repo.
 ---
 
 # Bootstrap from claude-template (claudet)
 
-Scaffolds a target project's `.claude/` config, `claudedocs/` doc structure, and `CLAUDE.md` by copying from the canonical claudet template repo. Architecture and process skills live in the same repo under `skills/` and are installed user-global via `make install` — they are NOT part of the per-project bootstrap copy.
+Scaffolds a target project's `.claude/` config, `.codex/` adapter config, `claudedocs/` doc structure, `CLAUDE.md`, and `AGENTS.md` by copying from the canonical claudet template repo. Architecture and process skills live in the same repo under `skills/` and are installed user-global via `make install` — they are NOT part of the per-project bootstrap copy.
 
 ## Canonical source
 
@@ -76,7 +76,8 @@ If the user has no network and no local clone, abort cleanly — never proceed w
 
 ```
 $SRC/  (claudet repo root, located via symlink resolution above)
-├── CLAUDE.md
+├── CLAUDE.md            → copy and customize
+├── AGENTS.md            → copy, then regenerate with agent-config-sync after CLAUDE.md edits
 ├── README.md            (skip — write a project-specific README)
 ├── Makefile             (skip — only used to install skills globally)
 ├── skills/              (skip — installed via `make install`, not per-project)
@@ -86,6 +87,11 @@ $SRC/  (claudet repo root, located via symlink resolution above)
 │   ├── rules/           → copy
 │   ├── settings.json    → copy
 │   └── settings.local.json   (skip — gitignored, user-specific)
+├── .codex/
+│   ├── agents/          → copy or regenerate from .claude/agents
+│   └── config.toml      → copy or regenerate
+├── .agents/
+│   └── skills/          → copy README only; generated command skills are project-local
 └── claudedocs/
     ├── INDEX.md         → copy and reset to empty index
     ├── prds/            → copy `_template.md` only
@@ -95,7 +101,7 @@ $SRC/  (claudet repo root, located via symlink resolution above)
     └── runbooks/        → copy structure only
 ```
 
-`.claude/skills/` does **not** exist in the source — skills live in `$SRC/skills/` as the canonical version-controlled source and are symlinked into `~/.claude/skills/` by `make install`.
+`.claude/skills/` does **not** exist in the source — skills live in `$SRC/skills/` as the canonical version-controlled source and are symlinked into `~/.claude/skills/` and `~/.agents/skills/` by `make install`.
 
 ## Workflow
 
@@ -116,15 +122,23 @@ cp -r "$SRC/.claude/agents"        "$TARGET/.claude/"
 cp -r "$SRC/.claude/commands"      "$TARGET/.claude/"
 cp -r "$SRC/.claude/rules"         "$TARGET/.claude/"
 cp    "$SRC/.claude/settings.json" "$TARGET/.claude/"
+cp -r "$SRC/.codex"                "$TARGET/"
+mkdir -p "$TARGET/.agents/skills"
+cp    "$SRC/.agents/skills/README.md" "$TARGET/.agents/skills/README.md"
 ```
 
 ### 3. Copy CLAUDE.md (and customize)
 
 ```bash
 cp "$SRC/CLAUDE.md" "$TARGET/CLAUDE.md"
+cp "$SRC/AGENTS.md" "$TARGET/AGENTS.md"
 ```
 
-Then ask the user to confirm or edit the **Tech Stack**, **Project Structure**, and **Git Conventions** sections — defaults assume Next.js 14 + TS + Prisma + Vitest. Don't leave the template defaults if the project's stack is different.
+Then ask the user to confirm or edit the **Tech Stack**, **Project Structure**, and **Git Conventions** sections in `CLAUDE.md` — defaults assume Next.js 14 + TS + Prisma + Vitest. Don't leave the template defaults if the project's stack is different. After editing `CLAUDE.md`, run the sync script to regenerate `AGENTS.md`, `.codex/config.toml`, `.codex/agents/`, and command skills:
+
+```bash
+python3 "$SRC/skills/agent-config-sync/scripts/agent_config_sync.py" --target "$TARGET" --direction claude-to-codex --force
+```
 
 ### 4. Scaffold claudedocs
 
@@ -144,6 +158,8 @@ Append to `.gitignore` (create if missing):
 ```
 .claude/settings.local.json
 CLAUDE.local.md
+.codex/settings.local.toml
+.codex/state/
 ```
 
 ### 6. Sanity check
@@ -157,13 +173,15 @@ head -20 "$TARGET/CLAUDE.md"
 
 Confirm:
 - No `.claude/skills/` directory was created.
+- `.agents/skills/` contains only project-local Codex skills or the README placeholder.
+- `.codex/config.toml` and `.codex/agents/` exist.
 - `claudedocs/` has 5 subdirectories and `INDEX.md`.
 - `INDEX.md` has empty tables, not the source template's sample rows.
 - `prds/_template.md` is present.
 
 ### 7. Note about global skills
 
-Tell the user: architecture and process skills (`solid-principles`, `code-quality-heuristics`, `creational-patterns`, `structural-patterns`, `behavioral-patterns`, `code-smells`, `writing-prd`, `deploy`, `security-review`) are installed at `~/.claude/skills/` (symlinked from `$SRC/skills/`) and apply to every project automatically — nothing extra is needed.
+Tell the user: architecture and process skills (`solid-principles`, `code-quality-heuristics`, `creational-patterns`, `structural-patterns`, `behavioral-patterns`, `code-smells`, `writing-prd`, `deploy`, `security-review`, `agent-config-sync`) are installed at `~/.claude/skills/` and `~/.agents/skills/` (symlinked from `$SRC/skills/`) and apply to every project automatically — nothing extra is needed.
 
 If the new project is for a teammate who doesn't have those skills, tell them to clone the claudet repo and run `make install` from its root.
 
@@ -173,11 +191,14 @@ If the new project is for a teammate who doesn't have those skills, tell them to
 - Forgetting to reset `claudedocs/INDEX.md` — it'll point at non-existent docs.
 - Copying `settings.local.json` or `CLAUDE.local.md` (both are personal/gitignored).
 - Creating a `.claude/skills/` directory in the new project — skills are global.
+- Forgetting to regenerate `AGENTS.md` after customizing `CLAUDE.md`.
+- Assuming Claude slash commands are Codex slash commands. Convert them into Codex skills with `agent-config-sync`.
 - Leaving Next.js/Prisma assumptions in `CLAUDE.md` for a project with a different stack.
 
 ## Related
 
 - Source template: `$SRC` (resolved at runtime from the symlinked install)
-- Global skills: `~/.claude/skills/` (symlinks back into `$SRC/skills/`)
+- Global skills: `~/.claude/skills/` and `~/.agents/skills/` (symlinks back into `$SRC/skills/`)
+- Sync helper: `skills/agent-config-sync`
 - After bootstrap, the `writing-prd` skill triggers automatically when the user describes a new feature.
 - For ongoing rule sync (after claudet rules evolve), use the `install-claudet-rules` skill — it handles diff-aware updates without re-running bootstrap.
