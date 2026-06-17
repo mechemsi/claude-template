@@ -1,3 +1,5 @@
+<!-- DO NOT EDIT — generated from ~/brain on 2026-06-17. Edit brain/projects/claudet/ instead. -->
+
 # Project Instructions for Claude and Codex
 
 ## Overview
