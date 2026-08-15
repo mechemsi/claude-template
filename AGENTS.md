@@ -81,7 +81,7 @@ This template ships scaffolding for the full Claude Code surface so a fresh proj
 ```
 .mcp.json                  # MCP servers — must live at repo root, applies to all teammates
 .claude/
-  settings.json            # permissions, env, hook + statusline registry
+  settings.json            # permissions, env, hook registry (status line comes from ~/.claude)
   settings.local.json      # personal overrides (gitignored)
   hooks/                   # deterministic lifecycle scripts (PostToolUse, SessionStart, PreCompact)
   commands/                # slash commands (/deploy, /review, /fix-issue)
@@ -90,7 +90,6 @@ This template ships scaffolding for the full Claude Code surface so a fresh proj
   rules/                   # path-scoped style/convention rules
   output-styles/           # custom response formats (e.g. terse)
   plugins/                 # bundled commands+agents+skills+MCP under one namespace
-  statusline.sh            # bottom-bar display script
 ```
 
 ## Codex Surface Area
