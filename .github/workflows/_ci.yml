@@ -220,7 +220,7 @@ jobs:
             yarn)  yarn npm audit --severity high --recursive ;;
             *) echo "::error::unknown package manager: $PM"; exit 1 ;;
           esac
-      - uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v1
+      - uses: google/osv-scanner-action/osv-scanner-action@v2
         with:
           scan-args: |
             --recursive
@@ -308,6 +308,9 @@ jobs:
     needs: [test-unit, test-integration]
     if: always() && needs.test-unit.result == 'success' && (needs.test-integration.result == 'success' || needs.test-integration.result == 'skipped')
     runs-on: ubuntu-latest
+    env:
+      # `secrets` is not a valid context in a step `if:` — surface it as env instead.
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -351,11 +354,11 @@ jobs:
             --compare-branch="$BASE_SHA" \
             --fail-under="$FLOOR"
       - name: Upload to Codecov
-        if: ${{ secrets.CODECOV_TOKEN != '' }}
+        if: env.CODECOV_TOKEN != ''
         uses: codecov/codecov-action@v4
         with:
           files: coverage-merged/lcov.info
-          token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ env.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
   # ---------------------------------------------------------------------------
